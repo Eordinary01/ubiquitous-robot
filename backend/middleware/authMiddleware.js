@@ -1,6 +1,13 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+const roleAccess = {
+  '/members/gym-members': ['admin', 'gymOwner'],
+  '/members/update-status': ['admin', 'gymOwner'],
+  '/members/add': ['admin', 'gymOwner']
+ 
+};
+
 module.exports = (req, res, next) => {
   try {
     console.log('Auth Check:', {
@@ -50,6 +57,15 @@ module.exports = (req, res, next) => {
       });
     }
 
+    // Role-based access control
+    const allowedRoles = roleAccess[req.path];
+    if (allowedRoles && !allowedRoles.includes(decoded.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Insufficient permissions'
+      });
+    }
+
     console.log("Token verified:", {
       userId: decoded.userId,
       role: decoded.role,
@@ -61,7 +77,8 @@ module.exports = (req, res, next) => {
       userId: decoded.userId,
       role: decoded.role,
       email: decoded.email,
-      gymId: decoded.gymId
+      gymId: decoded.gymId,
+      name: decoded.name
     };
 
     next();

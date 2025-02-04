@@ -6,79 +6,48 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 exports.register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-
   try {
+    const { name, email, password, role, gymDetails } = req.body;
+
     const existingUser = await User.findOne({ email });
-
-    if (existingUser)
-      return res.status(400).json({ message: "User already exists" });
-
-    if (typeof password !== 'string') {
-      return res.status(400).json({ message: "Invalid password format" });
-    }
-
-
-    let gym = null;
-
-    if(role === "gymOwner" && gymDetails){
-
-      gym = new Gym({
-        name:gymDetails.name,
-        owner: null,
-        address:{
-          street: gymDetails.address.street,
-          city: gymDetails.address.city,
-          state: gymDetails.address.state,
-          zipCode: gymDetails.address.zipCode
-        },
-        contact:{
-          phone: gymDetails.contact.phone,
-          email: gymDetails.contact.email
-        },
-        amenities: gymDetails.amenities || [],
-        operatingHours:{
-          openTime:gymDetails.operatingHours.openTime,
-          closeTime:gymDetails.operatingHours.closeTime,
-          daysOpen: gymDetails.operatingHours.daysOpen || []
-        },
-        memberShipPlans:gymDetails.memberShipPlans || []
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: "User already exists. Please login.",
       });
-
-      await gym.save();
-
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = new User({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role,
-      gym:gym ? gym._id : null
     });
 
-    if(gym){
-      gynm.owner = user._id;
-      await gym.save();
+    let gym = null;
+    if (role === "gymOwner" && gymDetails) {
+      gym = await Gym.create({
+        ...gymDetails,
+        owner: user._id,
+      });
     }
 
-    await user.save();
-
-
-    if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
-      user.role = "admin";
-      await user.save();
-    }
-    res.status(201).json({ 
-      message: "User created successfully", 
-      userId: user._id,
-      gymId: gym ? gym._id : null
+    res.status(201).json({
+      success: true,
+      data: {
+        user,
+        ...(gym && { gym }),
+      },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error during registration" });
+    console.error("Registration error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error: " + error.message,
+    });
   }
 };
 
@@ -112,13 +81,13 @@ exports.login = async (req, res) => {
     );
 
     res.json({
-        token,
-        user:{
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role
-        },
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -126,23 +95,22 @@ exports.login = async (req, res) => {
   }
 };
 
-
 exports.verifyToken = async (req, res) => {
-    try {
-      const user = await User.findById(req.user.userId).select("name email role");
-  
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-  
-      res.json({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      });
-    } catch (error) {
-      console.error("Verification error:", error);
-      res.status(500).json({ message: "Error while verifying token" });
+  try {
+    const user = await User.findById(req.user.userId).select("name email role");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-  };
+
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+  } catch (error) {
+    console.error("Verification error:", error);
+    res.status(500).json({ message: "Error while verifying token" });
+  }
+};

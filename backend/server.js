@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+// app.use(cors());
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,16 +18,13 @@ app.use((req, res, next) => {
 });
 
 const corsOptions = {
-  origin: ["http://localhost:3000"],
+  origin: ['http://localhost:3000'],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   credentials: true,
-  optionsSuccessStatus: 204,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
-
-app.options("*", cors(corsOptions));
-
 app.use((req, res, next) => {
   // console.log('Request Origin:', req.headers.origin);
   next();
@@ -54,6 +51,7 @@ app.get("/", (req, res) => {
 
 app.use("/auth",require("./routes/authRoutes"));
 app.use('/join', require('./routes/joinRoutes'));
+app.use('/members', require('./routes/memberRoutes'));
 
 
 
