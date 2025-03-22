@@ -2,41 +2,41 @@ const mongoose = require("mongoose");
 const excerciseCategories = require("./ExcerciseCategories");
 
 const allExercises = Object.values(excerciseCategories).flat();
-const measurementSchema = new mongoose.Schema({
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-  weight: {
-    type: Number,
-  },
-  height: {
-    type: Number,
-  },
+// const measurementSchema = new mongoose.Schema({
+//   date: {
+//     type: Date,
+//     default: Date.now,
+//   },
+//   weight: {
+//     type: Number,
+//   },
+//   height: {
+//     type: Number,
+//   },
 
-  chest: {
-    type: Number,
-  },
-  waist: {
-    type: Number,
-  },
-  hips: {
-    type: Number,
-  },
-  biceps: {
-    type: Number,
-  },
+//   chest: {
+//     type: Number,
+//   },
+//   waist: {
+//     type: Number,
+//   },
+//   hips: {
+//     type: Number,
+//   },
+//   biceps: {
+//     type: Number,
+//   },
 
-  thighs: {
-    type: Number,
-  },
-  bodyFatPercentage: {
-    type: Number,
-  },
-  bmi: {
-    type: Number,
-  },
-});
+//   thighs: {
+//     type: Number,
+//   },
+//   bodyFatPercentage: {
+//     type: Number,
+//   },
+//   bmi: {
+//     type: Number,
+//   },
+// });
 
 const exerciseSchema = new mongoose.Schema({
   name: {
@@ -47,7 +47,7 @@ const exerciseSchema = new mongoose.Schema({
   muscleGroup: {
     type: String,
     enum: Object.keys(excerciseCategories),
-    required: true,
+    // required: true,
   },
   sets: {
     type: Number,
@@ -82,22 +82,39 @@ const exerciseSchema = new mongoose.Schema({
   ],
 });
 
+// Updated to be an object with day keys
 const workoutPlanSchema = new mongoose.Schema({
-  day: {
-    type: String,
-    enum: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ],
+  Monday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
   },
-  exercise: [exerciseSchema],
-  notes: String,
-  duration: Number,
+  Tuesday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
+  },
+  Wednesday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
+  },
+  Thursday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
+  },
+  Friday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
+  },
+  Saturday: {
+    exercises: [exerciseSchema],
+    notes: String,
+    duration: Number,
+  },
+  
 });
 
 const mealSchema = new mongoose.Schema({
@@ -186,8 +203,22 @@ const memberSchema = new mongoose.Schema(
       allergies: [String],
       bloodGroup: String,
     },
-    measurements: [measurementSchema],
-    exercisePlan: [workoutPlanSchema],
+    measurements: {
+      date: {
+        type: Date,
+        default: Date.now,
+      },
+      weight: Number,
+      height: Number,
+      chest: Number,
+      waist: Number,
+      hips: Number,
+      biceps: Number,
+      thighs: Number,
+      bodyFatPercentage: Number,
+      bmi: Number,
+    },
+    exercisePlan: workoutPlanSchema,
     dietPlan: [dietPlanSchema],
   },
   {

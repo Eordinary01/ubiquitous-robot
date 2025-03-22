@@ -16,12 +16,12 @@ export default function Home() {
             Revolutionizing Fitness Management: Connecting Enthusiasts, Empowering Gym Owners
           </p>
           <div className="space-x-6">
-            <button className="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 shadow-lg">
+            <button className="bg-white text-indigo-600 px-8 py-4 rounded-full font-bold text-2xl hover:bg-gray-100 transition-all duration-300 shadow-lg">
               Find Gyms
             </button>
-            <button className="border-2 border-white text-white px-8 py-4 rounded-full text-lg hover:bg-white/20 transition-all duration-300 shadow-lg">
+            {/* <button className="border-2 border-white text-white px-8 py-4 rounded-full text-lg hover:bg-white/20 transition-all duration-300 shadow-lg">
               List Your Gym
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

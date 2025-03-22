@@ -61,7 +61,7 @@ const excerciseCategories = {
         'Hip Thrusts'
     ],
     ABS:[
-        'Crunches',
+        'Crunches', 
         'Leg Raises',
         'Russian Twists',
         'Planks',
@@ -71,17 +71,7 @@ const excerciseCategories = {
         'Ab Rollouts',
         'Reverse Crunches'
     ],
-    CARDIO:[
-        'Running',
-        'Cycling',
-        'Swimming',
-        'Jump Rope',
-        'Rowing',
-        'Stair Climbing',
-        'HIIT',
-        'Elliptical',
-        'Dancing'
-    ],
+   
 };
 
 module.exports = excerciseCategories;

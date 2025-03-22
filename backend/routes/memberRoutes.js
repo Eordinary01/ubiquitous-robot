@@ -8,7 +8,8 @@ router.post("/add", authMiddleware, memberController.addMember);
 // gym owner fetches all members of their gym
 
 router.get("/gym-members", authMiddleware, memberController.getGymMembers);
-
+router.get("/join-requests", authMiddleware, memberController.getJoinRequests);
+router.get("/status", authMiddleware, memberController.getMemberStatus);
 router.put("/update-status", authMiddleware, memberController.updateMemberStatus);
 router.put(
   "/exercise-plan",

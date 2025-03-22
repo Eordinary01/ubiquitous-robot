@@ -6,7 +6,7 @@ const joinSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
-    gum:{
+    gym:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Gym",
         required: true
@@ -18,4 +18,4 @@ const joinSchema = new mongoose.Schema({
     },
 });
 
-mongoose.model("Join", joinSchema);
+module.exports = mongoose.model("Join", joinSchema);

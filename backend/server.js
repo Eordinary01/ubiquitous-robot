@@ -52,6 +52,7 @@ app.get("/", (req, res) => {
 app.use("/auth",require("./routes/authRoutes"));
 app.use('/join', require('./routes/joinRoutes'));
 app.use('/members', require('./routes/memberRoutes'));
+app.use('/gyms',require('./routes/gymRoutes'));
 
 
 

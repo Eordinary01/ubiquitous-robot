@@ -77,7 +77,7 @@ module.exports = (req, res, next) => {
       userId: decoded.userId,
       role: decoded.role,
       email: decoded.email,
-      gymId: decoded.gymId,
+      gymId: decoded.gymId || null,
       name: decoded.name
     };
 

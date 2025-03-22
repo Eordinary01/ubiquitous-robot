@@ -26,6 +26,11 @@ const UserSchema = new mongoose.Schema({
         required: true,
         default: "user"
     },
+    gymId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Gym",
+        default: null 
+    }
 
 
 },
