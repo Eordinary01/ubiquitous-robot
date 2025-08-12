@@ -4,139 +4,70 @@ const Join = require("../models/joinSchema");
 const User = require("../models/User");
 const Gym = require("../models/GymSchema");
 
+// Update your existing addMember method in memberController.js
 exports.addMember = async (req, res) => {
   try {
     const { joinRequestId, membershipDetails } = req.body;
-    const gymOwnerId = req.user.userId;
 
-    const joinRequest = await Join.findById(joinRequestId)
-      .populate({
-        path: "member",
-        select: "name email",
-      })
-      .populate("gym");
+    console.log("Adding member with joinRequestId:", joinRequestId);
+    console.log("Membership details:", membershipDetails);
 
+    // Find the join request to get user and gym info
+    const joinRequest = await Join.findById(joinRequestId);
     if (!joinRequest) {
-      return res.status(400).json({
-        success: false,
-        message: "Request not found",
+      return res.status(404).json({ message: "Join request not found" });
+    }
+
+    // Check if member already exists for this join request
+    let member = await Member.findOne({ joinRequestId: joinRequestId });
+
+    if (member) {
+      // Update existing member
+      member.memberShipPlan =
+        membershipDetails.memberShipPlan || member.memberShipPlan;
+      member.healthInfo = membershipDetails.healthInfo || member.healthInfo;
+      member.measurements =
+        membershipDetails.measurements || member.measurements;
+      member.exercisePlan =
+        membershipDetails.exercisePlan || member.exercisePlan;
+
+      await member.save();
+
+      console.log("Updated existing member:", member._id);
+      return res.json({
+        message: "Member updated successfully",
+        member: member,
+      });
+    } else {
+      // Create new member
+      const newMember = new Member({
+        joinRequestId: joinRequestId,
+        user: joinRequest.member, // ✅ FIXED
+        gym: joinRequest.gym, // ✅ FIXED
+        memberShipPlan: membershipDetails.memberShipPlan,
+        healthInfo: membershipDetails.healthInfo,
+        measurements: membershipDetails.measurements,
+        exercisePlan: membershipDetails.exercisePlan,
+        status: "active",
+      });
+
+      await newMember.save();
+
+      // Optionally update join request status
+      joinRequest.status = "approved";
+      await joinRequest.save();
+
+      console.log("Created new member:", newMember._id);
+      return res.status(201).json({
+        message: "Member created successfully",
+        member: newMember,
       });
     }
-
-    if (joinRequest.gym.owner.toString() !== gymOwnerId) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-    if (joinRequest.status !== "approved") {
-      return res.status(400).json({
-        success: false,
-        message: "Join request must be approved first!!",
-      });
-    }
-
-    let endDate = new Date();
-
-    switch (membershipDetails.duration) {
-      case "Monthly":
-        endDate.setMonth(endDate.getMonth() + 1);
-        break;
-      case "Quarterly":
-        endDate.setMonth(endDate.getMonth() + 3);
-        break;
-      case "Annual":
-        endDate.setFullYear(endDate.getFullYear() + 1);
-        break;
-    }
-
-    // Process measurements
-    const measurements = membershipDetails.measurements
-      ? {
-          ...membershipDetails.measurements,
-          weight: Number(membershipDetails.measurements.weight),
-          height: Number(membershipDetails.measurements.height),
-          chest: Number(membershipDetails.measurements.chest),
-          waist: Number(membershipDetails.measurements.waist),
-          hips: Number(membershipDetails.measurements.hips),
-          biceps: Number(membershipDetails.measurements.biceps),
-          thighs: Number(membershipDetails.measurements.thighs),
-          bodyFatPercentage: Number(
-            membershipDetails.measurements.bodyFatPercentage
-          ),
-          bmi: Number(membershipDetails.measurements.bmi),
-          date: new Date(membershipDetails.measurements.date),
-        }
-      : undefined;
-
-    // Process exercise plan
-    const exercisePlan = {};
-    const days = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ];
-
-    if (membershipDetails.exercisePlan) {
-      days.forEach((day) => {
-        if (membershipDetails.exercisePlan[day]) {
-          exercisePlan[day] = {
-            exercises: membershipDetails.exercisePlan[day].exercises.map(
-              (exercise) => ({
-                name: exercise.name,
-                muscleGroup: exercise.muscleGroup,
-                sets: Number(exercise.sets),
-                reps: Number(exercise.reps),
-                weight: Number(exercise.weight || 0),
-                duration: Number(exercise.duration || 0),
-                restBetweenSets: Number(exercise.restBetweenSets || 60),
-                notes: exercise.notes || "",
-                progression: [],
-              })
-            ),
-            notes: membershipDetails.exercisePlan[day].notes || "",
-            duration: Number(membershipDetails.exercisePlan[day].duration || 0),
-          };
-        }
-      });
-    }
-
-    const member = new Member({
-      user: joinRequest.member._id,
-      gym: joinRequest.gym._id,
-      memberShipPlan: {
-        name: membershipDetails.name,
-        duration: membershipDetails.duration,
-        startDate: new Date(),
-        endDate: endDate,
-        price: membershipDetails.price,
-      },
-      healthInfo: membershipDetails.healthInfo,
-      measurements: measurements,
-      exercisePlan: exercisePlan,
-    });
-
-    await member.save();
-
-    await User.findByIdAndUpdate(joinRequest.member._id, {
-      role: "member",
-      gym: joinRequest.gym._id,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Member Added Successfully",
-      member,
-    });
   } catch (error) {
-    console.log(error);
+    console.error("Error in addMember:", error);
     res.status(500).json({
-      success: false,
-      message: "Error Adding Member!!",
+      message: "Server error",
+      error: error.message,
     });
   }
 };
@@ -240,71 +171,70 @@ exports.getJoinRequests = async (req, res) => {
 };
 
 exports.getMemberStatus = async (req, res) => {
-    try {
-        const userId = req.user.userId;  
+  try {
+    const userId = req.user.userId;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: "User ID is missing"
-            });
-        }
-
-        const memberDetails = await Member.findOne({ user: userId })
-            .populate('gym', 'name')
-            .populate('user', 'name email');
-
-        if (!memberDetails) {
-            const joinRequest = await Join.findOne({ member: userId })
-                .populate('gym', 'name')
-                .populate('member', 'name email');
-
-            if (!joinRequest) {
-                return res.status(404).json({
-                    success: false,
-                    message: "No membership found"
-                });
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    status: joinRequest.status,
-                    gymName: joinRequest.gym.name,
-                    member: {
-                        name: joinRequest.member.name,
-                        email: joinRequest.member.email
-                    }
-                }
-            });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                status: 'active',
-                gymName: memberDetails.gym.name,
-                planName: memberDetails.memberShipPlan.name,
-                startDate: memberDetails.memberShipPlan.startDate,
-                endDate: memberDetails.memberShipPlan.endDate,
-                member: {
-                    name: memberDetails.user.name,
-                    email: memberDetails.user.email
-                },
-                exercisePlan: memberDetails.exercisePlan || {},
-                dietPlan: memberDetails.dietPlan || [],
-                measurements: memberDetails.measurements || {},
-                healthInfo: memberDetails.healthInfo || {}
-            }
-        });
-
-    } catch (error) {
-        console.error('Get Member Status Error:', error);
-        res.status(500).json({
-            success: false,
-            message: "Error fetching member status"
-        });
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is missing",
+      });
     }
+
+    const memberDetails = await Member.findOne({ user: userId })
+      .populate("gym", "name")
+      .populate("user", "name email");
+
+    if (!memberDetails) {
+      const joinRequest = await Join.findOne({ member: userId })
+        .populate("gym", "name")
+        .populate("member", "name email");
+
+      if (!joinRequest) {
+        return res.status(404).json({
+          success: false,
+          message: "No membership found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          status: joinRequest.status,
+          gymName: joinRequest.gym.name,
+          member: {
+            name: joinRequest.member.name,
+            email: joinRequest.member.email,
+          },
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: "active",
+        gymName: memberDetails.gym.name,
+        planName: memberDetails.memberShipPlan.name,
+        startDate: memberDetails.memberShipPlan.startDate,
+        endDate: memberDetails.memberShipPlan.endDate,
+        member: {
+          name: memberDetails.user.name,
+          email: memberDetails.user.email,
+        },
+        exercisePlan: memberDetails.exercisePlan || {},
+        dietPlan: memberDetails.dietPlan || [],
+        measurements: memberDetails.measurements || {},
+        healthInfo: memberDetails.healthInfo || {},
+      },
+    });
+  } catch (error) {
+    console.error("Get Member Status Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching member status",
+    });
+  }
 };
 
 exports.updateMemberStatus = async (req, res) => {
@@ -380,71 +310,79 @@ exports.updateMemberStatus = async (req, res) => {
 };
 
 exports.updateExercisePlan = async (req, res) => {
-    try {
-        const { memberId, exercisePlan } = req.body;
-        const gymOwnerId = req.user.userId;
+  try {
+    const { memberId, exercisePlan } = req.body;
+    const gymOwnerId = req.user.userId;
 
-        const member = await Member.findById(memberId)
-            .populate('gym');
+    const member = await Member.findById(memberId).populate("gym");
 
-        if (!member || member.gym.owner.toString() !== gymOwnerId) {
-            return res.status(403).json({
-                success: false,
-                message: "Unauthorized access or member not found"
-            });
-        }
-
-        // Validate and process exercise plan
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const processedPlan = {};
-
-        for (const day of days) {
-            if (exercisePlan[day]) {
-                // Validate exercises for this day
-                for (const exercise of exercisePlan[day].exercises) {
-                    if (!exerciseCategories[exercise.muscleGroup]?.includes(exercise.name)) {
-                        return res.status(400).json({
-                            success: false,
-                            message: `Invalid exercise '${exercise.name}' for muscle group '${exercise.muscleGroup}'`
-                        });
-                    }
-                }
-
-                // Process and format the day's exercises
-                processedPlan[day] = {
-                    exercises: exercisePlan[day].exercises.map(exercise => ({
-                        name: exercise.name,
-                        muscleGroup: exercise.muscleGroup,
-                        sets: Number(exercise.sets),
-                        reps: Number(exercise.reps),
-                        weight: Number(exercise.weight || 0),
-                        duration: Number(exercise.duration || 0),
-                        restBetweenSets: Number(exercise.restBetweenSets || 60),
-                        notes: exercise.notes || '',
-                        progression: exercise.progression || []
-                    })),
-                    notes: exercisePlan[day].notes || '',
-                    duration: Number(exercisePlan[day].duration || 0)
-                };
-            }
-        }
-
-        member.exercisePlan = processedPlan;
-        await member.save();
-
-        res.json({
-            success: true,
-            message: "Exercise plan updated successfully",
-            exercisePlan: member.exercisePlan
-        });
-    } catch (error) {
-        console.error('Update Exercise Plan Error:', error);
-        res.status(500).json({
-            success: false,
-            message: "Error updating exercise plan",
-            error: error.message
-        });
+    if (!member || member.gym.owner.toString() !== gymOwnerId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access or member not found",
+      });
     }
+
+    // Validate and process exercise plan
+    const days = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const processedPlan = {};
+
+    for (const day of days) {
+      if (exercisePlan[day]) {
+        // Validate exercises for this day
+        for (const exercise of exercisePlan[day].exercises) {
+          if (
+            !exerciseCategories[exercise.muscleGroup]?.includes(exercise.name)
+          ) {
+            return res.status(400).json({
+              success: false,
+              message: `Invalid exercise '${exercise.name}' for muscle group '${exercise.muscleGroup}'`,
+            });
+          }
+        }
+
+        // Process and format the day's exercises
+        processedPlan[day] = {
+          exercises: exercisePlan[day].exercises.map((exercise) => ({
+            name: exercise.name,
+            muscleGroup: exercise.muscleGroup,
+            sets: Number(exercise.sets),
+            reps: Number(exercise.reps),
+            weight: Number(exercise.weight || 0),
+            duration: Number(exercise.duration || 0),
+            restBetweenSets: Number(exercise.restBetweenSets || 60),
+            notes: exercise.notes || "",
+            progression: exercise.progression || [],
+          })),
+          notes: exercisePlan[day].notes || "",
+          duration: Number(exercisePlan[day].duration || 0),
+        };
+      }
+    }
+
+    member.exercisePlan = processedPlan;
+    await member.save();
+
+    res.json({
+      success: true,
+      message: "Exercise plan updated successfully",
+      exercisePlan: member.exercisePlan,
+    });
+  } catch (error) {
+    console.error("Update Exercise Plan Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating exercise plan",
+      error: error.message,
+    });
+  }
 };
 
 exports.getExerciseCategories = async (req, res) => {
@@ -517,6 +455,116 @@ exports.updateMeasurements = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error updating measurements",
+    });
+  }
+};
+exports.getMemberById = async (req, res) => {
+  try {
+    const memberId = req.params.id;
+    const userId = req.user.userId;
+
+    const member = await Member.findById(memberId)
+      .populate("user", "name email")
+      .populate("gym", "name owner");
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: "No member details found for this ID",
+      });
+    }
+
+    // Optional: Ensure the requesting user is the gym owner
+    if (member.gym.owner.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to this member's data",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: member,
+    });
+  } catch (error) {
+    console.error("Error fetching member by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching member details",
+    });
+  }
+};
+
+exports.getMemberByUserId = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const member = await Member.findOne({ user: userId })
+      .populate("user", "name email")
+      .populate("gym", "name owner");
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: "No member found for this user",
+      });
+    }
+
+    // Optional ownership check:
+    if (member.gym.owner.toString() !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized access to this member's data",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      member,
+    });
+  } catch (error) {
+    console.error("getMemberByUserId error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching member",
+    });
+  }
+};
+// In your memberController.js
+// Add this method to your memberController.js
+exports.getMemberByJoinRequestId = async (req, res) => {
+  try {
+    const { joinRequestId } = req.params;
+
+    console.log("Looking for member with joinRequestId:", joinRequestId);
+
+    // Find member by joinRequestId
+    const member = await Member.findOne({ joinRequestId: joinRequestId });
+
+    if (!member) {
+      return res.status(404).json({
+        message: "Member not found for this join request",
+        joinRequestId: joinRequestId,
+      });
+    }
+
+    // Transform the data to match what your React component expects
+    const responseData = {
+      membershipDetails: {
+        memberShipPlan: member.memberShipPlan,
+        healthInfo: member.healthInfo,
+        measurements: member.measurements,
+        exercisePlan: member.exercisePlan,
+      },
+    };
+
+    console.log("Found member:", member._id);
+    res.json(responseData);
+  } catch (error) {
+    console.error("Error in getMemberByJoinRequestId:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
     });
   }
 };

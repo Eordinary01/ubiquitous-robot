@@ -20,7 +20,7 @@ export default function Request() {
 
     try {
       console.log("Fetching requests with token:", token);
-      const response = await fetch("http://localhost:8010/join/requests", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/requests`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ export default function Request() {
     setProcessing(true);
     try {
       console.log(`Processing request ${requestId} with status: ${status}`);
-      const response = await fetch("http://localhost:8010/join/process", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/process`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

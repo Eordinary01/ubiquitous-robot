@@ -157,6 +157,12 @@ const dietPlanSchema = new mongoose.Schema({
 
 const memberSchema = new mongoose.Schema(
   {
+    joinRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "JoinRequest",
+      required: true,
+      unique: true
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -172,20 +178,20 @@ const memberSchema = new mongoose.Schema(
       duration: {
         type: String,
         enum: ["Monthly", "Quarterly", "Annual"],
-        required: true,
+        // required: true,
       },
       startDate: {
         type: Date,
-        required: true,
+        // required: true,
         default: Date.now,
       },
       endDate: {
         type: Date,
-        required: true,
+        // required: true,
       },
       price: {
         type: Number,
-        required: true,
+        // required: true,
       },
     },
     status: {

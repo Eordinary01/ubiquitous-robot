@@ -19,8 +19,8 @@ export default function GymsPage() {
       try {
         const endpoint =
           user.role === "gymOwner"
-            ? `http://localhost:8010/gyms/owner/${user.id}`
-            : "http://localhost:8010/gyms";
+            ? `${process.env.NEXT_PUBLIC_API_URL}/gyms/owner/${user.id}`
+            : `${process.env.NEXT_PUBLIC_API_URL}/gyms`;
 
         const response = await fetch(endpoint, {
           method: "GET",
@@ -45,7 +45,7 @@ export default function GymsPage() {
   const handleJoinRequest = async (gymId) => {
     setJoiningGym(gymId);
     try {
-      const response = await fetch("http://localhost:8010/join/request", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

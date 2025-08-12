@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
 
-      const response = await fetch("http://localhost:8010/auth/register", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
 
-      const response = await fetch("http://localhost:8010/auth/login", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

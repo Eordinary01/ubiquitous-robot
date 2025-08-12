@@ -24,52 +24,53 @@ const Dashboard = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      return;
-    }
-    if (!gymId) {
-      setError("Gym ID is missing");
-      setLoading(false);
-      return;
-    }
+  if (!isLoggedIn) return;
 
-    const fetchData = async () => {
-      try {
-        if (user.role === "gymOwner") {
-          const response = await fetch(
-            `http://localhost:8010/members/gym-members?gymId=${gymId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
+  const fetchData = async () => {
+    try {
+      if (user.role === "gymOwner") {
+        if (!gymId) {
+          setError("Gym ID is missing");
+          setLoading(false);
+          return;
+        }
 
-          if (!response.ok) throw new Error("Failed to fetch members");
-          const data = await response.json();
-          setMembers(data.data.members);
-        } else if (user.role === "member") {
-          const response = await fetch(`http://localhost:8010/members/status`, {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/members/gym-members?gymId=${gymId}`,
+          {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          });
+          }
+        );
 
-          if (!response.ok) throw new Error("Failed to fetch member status");
-          const data = await response.json();
-          setMemberStatus(data.data);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        if (!response.ok) throw new Error("Failed to fetch members");
+        const data = await response.json();
+        setMembers(data.data.members);
       }
-    };
 
-    fetchData();
-  }, [isLoggedIn, user, gymId, token]);
+      if (user.role === "member") {
+        const response = await fetch(`http://localhost:8010/members/status`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch member status");
+        const data = await response.json();
+        setMemberStatus(data.data);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [isLoggedIn, user, gymId, token]);
 
   if (loading)
     return (
@@ -91,7 +92,7 @@ const Dashboard = () => {
   if (user?.role === "member") {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Keep existing nav code */}
+       
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
@@ -361,6 +362,9 @@ const Dashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">Plan: {member?.gym}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Join Id: {member?._id}</p>
                 </div>
                 <button
                   onClick={() => router.push(`/dashboard/${member._id}`)}

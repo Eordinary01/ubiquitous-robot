@@ -2,14 +2,30 @@
 import { Plus, Trash2, Info } from "lucide-react";
 import exerciseCategories from "@/constants/ExerciseCategories";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Separator } from "./ui/separator";
 
 export const MemberShipPlanForm = ({ data, updateData }) => {
@@ -19,7 +35,7 @@ export const MemberShipPlanForm = ({ data, updateData }) => {
         <Label htmlFor="plan-name">Plan Name</Label>
         <Input
           id="plan-name"
-          value={data.name}
+          value={data?.name || ""} // Ensure always a string
           onChange={(e) => updateData({ ...data, name: e.target.value })}
           placeholder="Enter plan name"
           className="focus:ring-indigo-500 focus:border-indigo-500"
@@ -28,8 +44,8 @@ export const MemberShipPlanForm = ({ data, updateData }) => {
 
       <div className="space-y-2">
         <Label htmlFor="plan-duration">Duration</Label>
-        <Select 
-          value={data.duration} 
+        <Select
+          value={data?.duration}
           onValueChange={(value) => updateData({ ...data, duration: value })}
         >
           <SelectTrigger id="plan-duration" className="w-full">
@@ -48,7 +64,7 @@ export const MemberShipPlanForm = ({ data, updateData }) => {
         <Input
           id="plan-price"
           type="number"
-          value={data.price}
+          value={data?.price}
           onChange={(e) => updateData({ ...data, price: e.target.value })}
           placeholder="Enter price"
           className="focus:ring-indigo-500 focus:border-indigo-500"
@@ -85,18 +101,26 @@ export const HealthInfoForm = ({ data, updateData }) => {
         </div>
         <Input
           id="medical-conditions"
-          value={data.medicalConditions.join(", ")}
-          onChange={(e) => handleArrayInput("medicalConditions", e.target.value)}
+          value={data.medicalConditions?.join(", ") || ""} // Ensure always a string
+          onChange={(e) =>
+            handleArrayInput("medicalConditions", e.target.value)
+          }
           placeholder="Enter medical conditions (comma-separated)"
           className="focus:ring-indigo-500 focus:border-indigo-500"
         />
         {data.medicalConditions.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {data.medicalConditions.filter(c => c).map((condition, i) => (
-              <Badge key={i} variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                {condition}
-              </Badge>
-            ))}
+            {data.medicalConditions
+              .filter((c) => c)
+              .map((condition, i) => (
+                <Badge
+                  key={i}
+                  variant="secondary"
+                  className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                >
+                  {condition}
+                </Badge>
+              ))}
           </div>
         )}
       </div>
@@ -124,19 +148,25 @@ export const HealthInfoForm = ({ data, updateData }) => {
         />
         {data.allergies.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {data.allergies.filter(a => a).map((allergy, i) => (
-              <Badge key={i} variant="secondary" className="bg-red-50 text-red-700 hover:bg-red-100">
-                {allergy}
-              </Badge>
-            ))}
+            {data.allergies
+              .filter((a) => a)
+              .map((allergy, i) => (
+                <Badge
+                  key={i}
+                  variant="secondary"
+                  className="bg-red-50 text-red-700 hover:bg-red-100"
+                >
+                  {allergy}
+                </Badge>
+              ))}
           </div>
         )}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="blood-group">Blood Group</Label>
-        <Select 
-          value={data.bloodGroup || ""} 
+        <Select
+          value={data.bloodGroup || ""}
           onValueChange={(value) => updateData({ ...data, bloodGroup: value })}
         >
           <SelectTrigger id="blood-group" className="w-full">
@@ -163,7 +193,7 @@ export const MeasurementsForm = ({ data, updateData }) => {
   const handleNumberInput = (field, value) => {
     updateData({
       ...data,
-      [field]: value === "" ? "" : parseFloat(value),
+      [field]: value === "" ? "" : parseFloat(value || 0),
     });
   };
 
@@ -264,7 +294,9 @@ export const MeasurementsForm = ({ data, updateData }) => {
                 id="body-fat"
                 type="number"
                 value={data.bodyFatPercentage}
-                onChange={(e) => handleNumberInput("bodyFatPercentage", e.target.value)}
+                onChange={(e) =>
+                  handleNumberInput("bodyFatPercentage", e.target.value)
+                }
                 placeholder="Body fat %"
                 className="focus:ring-indigo-500 focus:border-indigo-500"
               />
@@ -287,7 +319,7 @@ export const ExercisePlanForm = ({ data, updateData }) => {
     "Saturday",
     // "Sunday",
   ];
-  
+
   // Get muscle groups from the exercise categories
   const muscleGroups = Object.keys(exerciseCategories);
 
@@ -321,7 +353,7 @@ export const ExercisePlanForm = ({ data, updateData }) => {
   const removeExercise = (day, exerciseIndex) => {
     const updatedExercises = [...data[day].exercises];
     updatedExercises.splice(exerciseIndex, 1);
-    
+
     const updatedData = {
       ...data,
       [day]: {
@@ -334,13 +366,13 @@ export const ExercisePlanForm = ({ data, updateData }) => {
 
   const updateExercise = (day, exerciseIndex, field, value) => {
     const updatedExercises = [...data[day].exercises];
-    
+
     // If updating muscle group, also reset the exercise name
     if (field === "muscleGroup") {
       updatedExercises[exerciseIndex] = {
         ...updatedExercises[exerciseIndex],
         muscleGroup: value,
-        name: "",  // Reset name when muscle group changes
+        name: "", // Reset name when muscle group changes
       };
     } else {
       updatedExercises[exerciseIndex] = {
@@ -374,12 +406,19 @@ export const ExercisePlanForm = ({ data, updateData }) => {
     <div className="space-y-6">
       <Accordion type="single" collapsible className="w-full">
         {days.map((day) => (
-          <AccordionItem key={day} value={day} className="border-b border-indigo-100">
+          <AccordionItem
+            key={day}
+            value={day}
+            className="border-b border-indigo-100"
+          >
             <AccordionTrigger className="py-4 hover:no-underline hover:text-indigo-700">
               <div className="flex justify-between items-center w-full pr-4">
                 <span className="font-medium">{day}</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="bg-indigo-50 text-indigo-700 mr-2">
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 mr-2"
+                  >
                     {data[day].exercises.length} exercises
                   </Badge>
                   <Badge variant="outline" className="bg-gray-50">
@@ -391,20 +430,28 @@ export const ExercisePlanForm = ({ data, updateData }) => {
             <AccordionContent>
               <div className="space-y-4 py-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={`${day}-duration`} className="font-medium">Duration (minutes)</Label>
+                  <Label htmlFor={`${day}-duration`} className="font-medium">
+                    Duration (minutes)
+                  </Label>
                   <Input
                     id={`${day}-duration`}
                     type="number"
                     value={data[day].duration}
-                    onChange={(e) => updateDayDetails(day, "duration", parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      updateDayDetails(
+                        day,
+                        "duration",
+                        parseInt(e.target.value) || 0
+                      )
+                    }
                     className="w-24 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
 
                 <div className="space-y-6 mt-4">
                   {data[day].exercises.map((exercise, exerciseIndex) => (
-                    <Card 
-                      key={exerciseIndex} 
+                    <Card
+                      key={exerciseIndex}
                       className="relative border-l-4 border-l-indigo-400 overflow-visible"
                     >
                       <CardContent className="pt-6">
@@ -412,9 +459,16 @@ export const ExercisePlanForm = ({ data, updateData }) => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Muscle Group</Label>
-                              <Select 
-                                value={exercise.muscleGroup} 
-                                onValueChange={(value) => updateExercise(day, exerciseIndex, "muscleGroup", value)}
+                              <Select
+                                value={exercise.muscleGroup}
+                                onValueChange={(value) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "muscleGroup",
+                                    value
+                                  )
+                                }
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select muscle group" />
@@ -430,16 +484,28 @@ export const ExercisePlanForm = ({ data, updateData }) => {
                             </div>
                             <div className="space-y-2">
                               <Label>Exercise</Label>
-                              <Select 
-                                value={exercise.name} 
-                                onValueChange={(value) => updateExercise(day, exerciseIndex, "name", value)}
+                              <Select
+                                value={exercise.name}
+                                onValueChange={(value) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "name",
+                                    value
+                                  )
+                                }
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select exercise" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {getExercisesForMuscleGroup(exercise.muscleGroup).map((exerciseName) => (
-                                    <SelectItem key={exerciseName} value={exerciseName}>
+                                  {getExercisesForMuscleGroup(
+                                    exercise.muscleGroup
+                                  ).map((exerciseName) => (
+                                    <SelectItem
+                                      key={exerciseName}
+                                      value={exerciseName}
+                                    >
                                       {exerciseName}
                                     </SelectItem>
                                   ))}
@@ -450,53 +516,106 @@ export const ExercisePlanForm = ({ data, updateData }) => {
 
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor={`${day}-ex-${exerciseIndex}-sets`}>Sets</Label>
+                              <Label
+                                htmlFor={`${day}-ex-${exerciseIndex}-sets`}
+                              >
+                                Sets
+                              </Label>
                               <Input
                                 id={`${day}-ex-${exerciseIndex}-sets`}
                                 type="number"
                                 value={exercise.sets}
-                                onChange={(e) => updateExercise(day, exerciseIndex, "sets", parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "sets",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
                                 className="focus:ring-indigo-500 focus:border-indigo-500"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`${day}-ex-${exerciseIndex}-reps`}>Reps</Label>
+                              <Label
+                                htmlFor={`${day}-ex-${exerciseIndex}-reps`}
+                              >
+                                Reps
+                              </Label>
                               <Input
                                 id={`${day}-ex-${exerciseIndex}-reps`}
                                 type="number"
                                 value={exercise.reps}
-                                onChange={(e) => updateExercise(day, exerciseIndex, "reps", parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "reps",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
                                 className="focus:ring-indigo-500 focus:border-indigo-500"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`${day}-ex-${exerciseIndex}-weight`}>Weight (kg)</Label>
+                              <Label
+                                htmlFor={`${day}-ex-${exerciseIndex}-weight`}
+                              >
+                                Weight (kg)
+                              </Label>
                               <Input
                                 id={`${day}-ex-${exerciseIndex}-weight`}
                                 type="number"
                                 value={exercise.weight}
-                                onChange={(e) => updateExercise(day, exerciseIndex, "weight", parseFloat(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "weight",
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
                                 className="focus:ring-indigo-500 focus:border-indigo-500"
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`${day}-ex-${exerciseIndex}-rest`}>Rest (sec)</Label>
+                              <Label
+                                htmlFor={`${day}-ex-${exerciseIndex}-rest`}
+                              >
+                                Rest (sec)
+                              </Label>
                               <Input
                                 id={`${day}-ex-${exerciseIndex}-rest`}
                                 type="number"
                                 value={exercise.restBetweenSets}
-                                onChange={(e) => updateExercise(day, exerciseIndex, "restBetweenSets", parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  updateExercise(
+                                    day,
+                                    exerciseIndex,
+                                    "restBetweenSets",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
                                 className="focus:ring-indigo-500 focus:border-indigo-500"
                               />
                             </div>
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor={`${day}-ex-${exerciseIndex}-notes`}>Notes</Label>
+                            <Label htmlFor={`${day}-ex-${exerciseIndex}-notes`}>
+                              Notes
+                            </Label>
                             <Textarea
                               id={`${day}-ex-${exerciseIndex}-notes`}
                               value={exercise.notes}
-                              onChange={(e) => updateExercise(day, exerciseIndex, "notes", e.target.value)}
+                              onChange={(e) =>
+                                updateExercise(
+                                  day,
+                                  exerciseIndex,
+                                  "notes",
+                                  e.target.value
+                                )
+                              }
                               placeholder="Exercise notes"
                               className="focus:ring-indigo-500 focus:border-indigo-500"
                               rows={2}
@@ -534,7 +653,9 @@ export const ExercisePlanForm = ({ data, updateData }) => {
                   <Textarea
                     id={`${day}-notes`}
                     value={data[day].notes}
-                    onChange={(e) => updateDayDetails(day, "notes", e.target.value)}
+                    onChange={(e) =>
+                      updateDayDetails(day, "notes", e.target.value)
+                    }
                     placeholder="Additional notes for this day's workout"
                     className="focus:ring-indigo-500 focus:border-indigo-500"
                     rows={3}

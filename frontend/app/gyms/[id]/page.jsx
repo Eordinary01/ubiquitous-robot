@@ -24,7 +24,7 @@ export default function GymDetailsPage() {
   useEffect(() => {
     const fetchGymDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:8010/gyms/${params.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gyms/${params.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
