@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, X } from "lucide-react";
 import { Transition } from "@headlessui/react";
+import { useRouter } from "next/navigation"; // ✅ import router
 
 export default function Request() {
   const { token, user } = useAuth();
+  const router = useRouter(); // ✅ initialize router
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,13 +22,16 @@ export default function Request() {
 
     try {
       console.log("Fetching requests with token:", token);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/requests`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/join/requests`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -34,7 +39,7 @@ export default function Request() {
       }
 
       const data = await response.json();
-      console.log("Fetched requests:", data); // Debug log
+      console.log("Fetched requests:", data);
       setRequests(data);
       setError(null);
     } catch (error) {
@@ -57,21 +62,31 @@ export default function Request() {
     setProcessing(true);
     try {
       console.log(`Processing request ${requestId} with status: ${status}`);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/process`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ requestId, status }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/join/process`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ requestId, status }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed to ${status} request`);
       }
 
-      await fetchRequests(); 
+      // ✅ If approved and gymOwner, redirect to member details page
+      if (status === "approved" && user?.role === "gymOwner") {
+        router.push(`/dashboard/${requestId}`);
+        return; // stop here, don’t call fetchRequests
+      }
+
+      // For other statuses or roles, refresh list
+      await fetchRequests();
     } catch (error) {
       console.error("Error processing request:", error);
       setError(error.message);
@@ -81,7 +96,7 @@ export default function Request() {
   };
 
   const renderRequestStatus = (request) => {
-    console.log("Rendering request status for:", request); // Debug log
+    console.log("Rendering request status for:", request);
 
     if (user?.role === "gymOwner") {
       if (request.status === "approved" || request.status === "rejected") {
@@ -95,6 +110,7 @@ export default function Request() {
           </p>
         );
       }
+
       // Show action buttons for pending requests
       return (
         <div className="flex space-x-2">
@@ -130,7 +146,7 @@ export default function Request() {
         }`}
       >
         {request.status === "approved"
-          ? "Your request has been accepted! You can  access the gym shortly."
+          ? "Your request has been accepted! You can access the gym shortly."
           : request.status === "rejected"
           ? "Your request was rejected. Contact the gym owner."
           : "Your request is pending approval."}
@@ -181,7 +197,9 @@ export default function Request() {
                       <p className="text-lg font-semibold text-gray-900">
                         {request.member?.name}
                       </p>
-                      <p className="text-gray-600">{request.member?.email}</p>
+                      <p className="text-gray-600">
+                        {request.member?.email}
+                      </p>
                       {request.status === "pending" && (
                         <p className="text-yellow-600 text-sm mt-1">Pending</p>
                       )}

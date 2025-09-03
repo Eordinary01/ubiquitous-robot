@@ -24,53 +24,56 @@ const Dashboard = () => {
   const router = useRouter();
 
   useEffect(() => {
-  if (!isLoggedIn) return;
+    if (!isLoggedIn) return;
 
-  const fetchData = async () => {
-    try {
-      if (user.role === "gymOwner") {
-        if (!gymId) {
-          setError("Gym ID is missing");
-          setLoading(false);
-          return;
+    const fetchData = async () => {
+      try {
+        if (user.role === "gymOwner") {
+          if (!gymId) {
+            setError("Gym ID is missing");
+            setLoading(false);
+            return;
+          }
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/members/gym-members?gymId=${gymId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to fetch members");
+          const data = await response.json();
+          setMembers(data.data.members);
         }
 
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/members/gym-members?gymId=${gymId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        if (user.role === "member") {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/members/status`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-        if (!response.ok) throw new Error("Failed to fetch members");
-        const data = await response.json();
-        setMembers(data.data.members);
+          if (!response.ok) throw new Error("Failed to fetch member status");
+          const data = await response.json();
+          setMemberStatus(data.data);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (user.role === "member") {
-        const response = await fetch(`http://localhost:8010/members/status`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch member status");
-        const data = await response.json();
-        setMemberStatus(data.data);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, [isLoggedIn, user, gymId, token]);
+    fetchData();
+  }, [isLoggedIn, user, gymId, token]);
 
   if (loading)
     return (
@@ -92,8 +95,6 @@ const Dashboard = () => {
   if (user?.role === "member") {
     return (
       <div className="min-h-screen bg-gray-50">
-       
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
             {/* Membership Status Card - This is working */}
@@ -320,12 +321,10 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Members Overview</h1>
-          <div className="flex items-center space-x-4">
-            <div className="bg-indigo-50 px-4 py-2 rounded-lg">
-              <span className="text-indigo-600 font-medium">
-                Total Members: {members.length}
-              </span>
-            </div>
+          <div className="bg-indigo-50 px-4 py-2 rounded-lg">
+            <span className="text-indigo-600 font-medium">
+              Total Members: {members.length}
+            </span>
           </div>
         </div>
 
@@ -341,38 +340,49 @@ const Dashboard = () => {
                 key={member._id}
                 className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 transition-all duration-200 hover:shadow-lg"
               >
+                {/* Header */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">
-                      {member.member?.name}
+                      {member.memberName}
                     </h2>
                     <p className="text-sm text-gray-500">
-                      {member.member?.email}
+                      {member.memberEmail}
                     </p>
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      member?.status === "active"
+                      member.status === "active"
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-700"
                     }`}
                   >
-                    {member?.status}
+                    {member.status}
                   </span>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">Plan: {member?.gym}</p>
+
+                {/* Plan Details */}
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><strong>Plan:</strong> {member.membershipPlanName || "Not Assigned"}</p>
+                  <p><strong>Duration:</strong> {member.membershipDuration || "-"}</p>
+                  <p><strong>Price:</strong> {member.membershipPrice ? `₹${member.membershipPrice}` : "-"}</p>
+                  <p><strong>Start date:</strong> {member.membershipStartDate || "-"}</p>
+                  <p><strong>End date:</strong> {member.membershipEndDate || "-"}</p>
+                  {/* <p><strong>Payment:</strong> {member.paymentStatus || "-"}</p> */}
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">Join Id: {member?._id}</p>
+
+                {/* Action Button */}
+                <div className="mt-4">
+                  <button
+                    onClick={() =>
+                      router.push(`/dashboard/${member.joinRequestId}`)
+                    }
+                    className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <Clipboard size={18} />
+                    <span>View / Edit Details</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => router.push(`/dashboard/${member._id}`)}
-                  className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center space-x-2"
-                >
-                  <Clipboard size={18} />
-                  <span>View Details</span>
-                </button>
               </div>
             ))}
           </div>

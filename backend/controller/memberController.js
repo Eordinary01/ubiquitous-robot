@@ -92,7 +92,6 @@ exports.getGymMembers = async (req, res) => {
     }
 
     const gym = await Gym.findById(gymId);
-
     if (!gym) {
       return res.status(404).json({
         success: false,
@@ -108,19 +107,40 @@ exports.getGymMembers = async (req, res) => {
       });
     }
 
-    const members = await Join.find({
-      gym: gym._id,
-      status: { $ne: "rejected" },
-    })
-      .populate("member", "name email")
-      // .populate("memberShipPlan")
-      .sort({ createdAt: -1 });
+    // ✅ Query members directly
+    const members = await Member.find({ gym: gym._id })
+      .populate("user", "name email") // get user info
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // ✅ Flatten for frontend convenience
+    const enrichedMembers = members.map((m) => ({
+      _id: m._id,
+      status: m.status,
+      paymentStatus: m.paymentStatus,
+      memberName: m.user?.name || "",
+      memberEmail: m.user?.email || "",
+      membershipPlanName: m.memberShipPlan?.name || "",
+      membershipDuration: m.memberShipPlan?.duration || "",
+      membershipPrice: m.memberShipPlan?.price || "",
+      membershipStartDate: m.memberShipPlan?.startDate
+        ? m.memberShipPlan.startDate.toISOString().substring(0, 10)
+        : "",
+      membershipEndDate: m.memberShipPlan?.endDate
+        ? m.memberShipPlan.endDate.toISOString().substring(0, 10)
+        : "",
+      healthInfo: m.healthInfo || {},
+      measurements: m.measurements || {},
+      exercisePlan: m.exercisePlan || {},
+      dietPlan: m.dietPlan || [],
+      joinRequestId: m.joinRequestId || ""
+    }));
 
     res.json({
       success: true,
       data: {
-        members,
-        total: members.length,
+        members: enrichedMembers,
+        total: enrichedMembers.length,
       },
     });
   } catch (error) {

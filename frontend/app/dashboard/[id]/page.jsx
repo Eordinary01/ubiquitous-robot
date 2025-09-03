@@ -31,11 +31,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 
 const MultiStepMemberForm = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const params = useParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -43,10 +42,11 @@ const MultiStepMemberForm = () => {
   const [error, setError] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [memberDataExists, setMemberDataExists] = useState(false);
-  const [viewMode, setViewMode] = useState(true);
+
+  // viewMode default depends on role: Gym owners start in edit mode
+  const [viewMode, setViewMode] = useState(user?.role !== "gymOwner");
 
   const joinRequestId = params?.id;
-
 
   const calculateEndDate = (startDate, duration) => {
     const start = new Date(startDate);
@@ -69,6 +69,7 @@ const MultiStepMemberForm = () => {
           .substring(0, 10);
     }
   };
+
   const [formData, setFormData] = useState({
     memberShipPlan: {
       name: "",
@@ -104,26 +105,12 @@ const MultiStepMemberForm = () => {
     },
   });
 
-  
-
-  // const steps = [
-  //   {
-  //     id: 1,
-  //     name: "Membership Plan",
-  //     icon: <ClipboardList className="h-5 w-5" />,
-  //   },
-  //   { id: 2, name: "Health Info", icon: <Heart className="h-5 w-5" /> },
-  //   { id: 3, name: "Measurements", icon: <Ruler className="h-5 w-5" /> },
-  //   { id: 4, name: "Exercise Plan", icon: <Dumbbell className="h-5 w-5" /> },
-  // ];
-
   const updateFormData = (section, data) => {
     setFormData((prev) => {
       if (section === "memberShipPlan") {
         const newStartDate = data.startDate || prev.memberShipPlan.startDate;
         const newDuration = data.duration || prev.memberShipPlan.duration;
         const updatedEndDate = calculateEndDate(newStartDate, newDuration);
-
         return {
           ...prev,
           [section]: {
@@ -146,7 +133,6 @@ const MultiStepMemberForm = () => {
         setError("Join Request ID is missing");
         return;
       }
-
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/members/by-join-request/${joinRequestId}`,
@@ -159,10 +145,8 @@ const MultiStepMemberForm = () => {
 
         if (res.ok) {
           const data = await res.json();
-
           if (data && data.membershipDetails) {
             const details = data.membershipDetails;
-
             setFormData({
               memberShipPlan: {
                 name: details.memberShipPlan?.name || "",
@@ -235,8 +219,12 @@ const MultiStepMemberForm = () => {
                 },
               },
             });
-
             setMemberDataExists(true);
+
+            // If role is gymOwner, skip viewMode even if data exists
+            if (user?.role === "gymOwner") {
+              setViewMode(false);
+            }
           } else {
             setMemberDataExists(false);
           }
@@ -253,19 +241,16 @@ const MultiStepMemberForm = () => {
         setIsInitialized(true);
       }
     };
-
     fetchMemberData();
-  }, [joinRequestId, token]);
+  }, [joinRequestId, token, user?.role]);
 
   const handleSubmit = async () => {
     if (!joinRequestId) {
       setError("Join Request ID is missing");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
       const processedExercisePlan = {};
       Object.entries(formData.exercisePlan).forEach(([day, plan]) => {
@@ -286,25 +271,28 @@ const MultiStepMemberForm = () => {
         };
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/members/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          joinRequestId,
-          membershipDetails: {
-            memberShipPlan: {
-              ...formData.memberShipPlan,
-              price: parseFloat(formData.memberShipPlan.price),
-            },
-            healthInfo: formData.healthInfo,
-            measurements: formData.measurements,
-            exercisePlan: processedExercisePlan,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/members/add`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        }),
-      });
+          body: JSON.stringify({
+            joinRequestId,
+            membershipDetails: {
+              memberShipPlan: {
+                ...formData.memberShipPlan,
+                price: parseFloat(formData.memberShipPlan.price),
+              },
+              healthInfo: formData.healthInfo,
+              measurements: formData.measurements,
+              exercisePlan: processedExercisePlan,
+            },
+          }),
+        }
+      );
 
       const data = await response.json();
       if (!response.ok)
@@ -426,12 +414,14 @@ const MultiStepMemberForm = () => {
                 {loading ? (
                   <>
                     <Loader className="h-4 w-4 animate-spin mr-2" />
-                    Saving...
+                    {memberDataExists ? "Saving..." : "Completing..."}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Complete Registration
+                    {memberDataExists
+                      ? "Save Changes"
+                      : "Complete Registration"}
                   </>
                 )}
               </Button>
