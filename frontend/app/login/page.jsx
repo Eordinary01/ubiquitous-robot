@@ -1,166 +1,181 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
-import { Mail, Lock } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
-function Login() {
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const { login, error, clearError, loading } = useAuth();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const [successMesaage, setSuccessMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [localError, setLocalError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const { email, password } = formData;
+  useEffect(() => {
+    const qEmail = searchParams.get("email");
+    if (qEmail) {
+      setFormData((prev) => ({
+        ...prev,
+        email: qEmail,
+        password: "password123",
+      }));
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
-    setError("");
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
+    if (error) clearError();
+    if (localError) setLocalError("");
   };
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    setIsLoading(true);
-    setError("");
-    setSuccessMessage("");
-
-    try {
-      await login({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      setSuccessMessage("Login Successfull!!. Redirecting to dashboard..");
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+    if (!formData.email || !formData.password) {
+      setLocalError("Email and password are required.");
+      return;
     }
+    await login(formData);
   };
+
+  const fillQuick = (email, pass) => {
+    setFormData({ email, password: pass });
+    if (error) clearError();
+    if (localError) setLocalError("");
+  };
+
+  const displayError = localError || error;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6">
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-xl shadow-xl border border-indigo-100 p-8">
-          {/* Header section */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-indigo-900 mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-indigo-500">Sign in to your account</p>
+    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-[460px] bg-surface border border-line rounded-panel overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-line bg-surface-alt">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint block">
+            FitConnect Portal
+          </span>
+          <h1 className="text-xl font-semibold text-ink tracking-tight mt-1">Sign in to your account</h1>
+          <p className="text-[13px] text-ink-soft mt-1">
+            Access your facility dashboard, workout splits, and nutrition plans.
+          </p>
+        </div>
+
+        {/* Demo Quick Fills */}
+        <div className="px-6 py-3 bg-surface-alt/50 border-b border-line flex flex-wrap items-center justify-between gap-2 text-[12px]">
+          <span className="text-ink-faint font-medium">Demo logins:</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fillQuick("demo@gym.com", "password123")}
+              className="px-2 py-0.5 rounded-[2px] bg-surface border border-line hover:border-ink-soft text-ink font-mono text-[11px] transition-colors"
+            >
+              Gym Owner
+            </button>
+            <button
+              type="button"
+              onClick={() => fillQuick("rahul@demo.com", "password123")}
+              className="px-2 py-0.5 rounded-[2px] bg-surface border border-line hover:border-ink-soft text-ink font-mono text-[11px] transition-colors"
+            >
+              Member
+            </button>
           </div>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-          {successMesaage && (
-            <p className="text-green-500 text-sm mb-4">{successMesaage}</p>
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          {displayError && (
+            <div className="p-3 bg-status-danger-soft border border-status-danger/40 rounded-control flex items-start gap-2.5 text-[13px] text-status-danger-text">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{displayError}</span>
+            </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div className="space-y-4">
-              <div className="relative">
-                <label
-                  htmlFor="email"
-                  className="text-sm font-medium text-indigo-900 mb-1 block"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value={email}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    required
-                    className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="relative">
-                <label
-                  htmlFor="password"
-                  className="text-sm font-medium text-indigo-900 mb-1 block"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <input
-                    type="password"
-                    name="password"
-                    value={password}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    required
-                    id="password"
-                    className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="remember"
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-indigo-300 rounded"
-                  />
-                  <label
-                    htmlFor="remember"
-                    className="ml-2 block text-sm text-gray-950"
-                  >
-                    Remember me
-                  </label>
-                </div>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-indigo-800 hover:text-indigo-700"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transform transition-all duration-150 hover:scale-[1.02]"
-            >
-              {isLoading ? "Loading..." : "Sign In"}
-            </button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-8">
-            <p className="text-center text-indigo-600">
-              Don't have an account?{" "}
-              <Link
-                href="/register"
-                className="text-indigo-800 hover:text-indigo-900 font-medium"
-              >
-                Create account
-              </Link>
-            </p>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-ink">
+              Email address <span className="text-ink-faint text-[12px] font-normal">(required)</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="e.g. demo@gym.com"
+              className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
+            />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[13px] font-medium text-ink">
+                Password <span className="text-ink-faint text-[12px] font-normal">(required)</span>
+              </label>
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full h-9 pl-3 pr-10 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-2 text-ink-soft hover:text-ink transition-colors"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="h-10 mt-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-on-primary font-semibold text-[13px] rounded-control flex items-center justify-center gap-2 transition-colors"
+            style={{ border: "var(--fill-border)" }}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              <>
+                <span>Sign in</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-surface-alt border-t border-line text-center text-[13px] text-ink-soft">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary-ink font-semibold hover:underline">
+            Register your gym or profile
+          </Link>
         </div>
       </div>
     </div>
   );
 }
 
-export default Login;
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-ink-soft">Loading login...</div>}>
+      <LoginForm />
+    </Suspense>
+  );
+}

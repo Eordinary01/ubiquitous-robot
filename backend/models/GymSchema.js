@@ -107,6 +107,29 @@ const GymSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    gymLogo: {
+      type: String,
+      default: null,
+      maxlength: [500, "gymLogo must not exceed 500 characters"],
+      validate: {
+        validator: function (v) {
+          if (v === null || v === undefined || v === "") return true;
+          return /^https:\/\/[^\s]+$/i.test(v);
+        },
+        message: "gymLogo must be a valid https URL",
+      },
+    },
+    themeColor: {
+      type: String,
+      default: null,
+      validate: {
+        validator: function (v) {
+          if (v === null || v === undefined || v === "") return true;
+          return /^#[0-9a-fA-F]{6}$/.test(v);
+        },
+        message: "themeColor must be a valid 6-character hex color (e.g., #1A2B3C)",
+      },
+    },
   },
   { timestamps: true }
 );

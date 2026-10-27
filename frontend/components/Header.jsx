@@ -1,181 +1,313 @@
+// frontend/components/Header.jsx
 "use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiHome, FiUser, FiLogIn, FiMenu, FiX, FiLogOut } from "react-icons/fi";
-import { Transition } from "@headlessui/react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { Menu, X, LogOut, Dumbbell, Sparkles } from "lucide-react";
 
 export default function Header() {
-  const [isOpen, setIsOpen] = useState(false);
-  const { isLoggedIn, logout, user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isLoggedIn, user, gymBranding, logout } = useAuth();
+  const pathname = usePathname();
+
+  const isLandingPage = pathname === "/";
 
   return (
-    <header className="bg-slate-100 text-gray-900 py-4 shadow-xl relative z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="flex items-center space-x-2 hover:opacity-90 transition-opacity"
-          >
-            <span className="text-2xl font-extrabold">FitConnect</span>
-          </Link>
+    <header className="sticky top-0 left-0 right-0 z-50 bg-surface border-b border-line">
+      {/* Top Brand Accent Line */}
+      <div className="h-[3px] bg-primary w-full transition-colors" />
 
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/"
-              className="hover:text-indigo-400 transition-colors duration-200 flex items-center space-x-1"
-            >
-              <FiHome className="w-5 h-5" />
-              <span>Home</span>
-            </Link>
-
-            {isLoggedIn && (
-              <Link
-              href="/request"
-              className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
-            >
-              Requests
-            </Link>
-            )}
-
-            {isLoggedIn && (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/gyms"
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
-                >
-                  Gyms
-                </Link>
-              </>
-            )}
-
-            {!isLoggedIn ? (
-              <>
-                <Link
-                  href="/login"
-                  className="text-indigo-900 hover:text-indigo-800 transition-colors duration-200 flex items-center space-x-1"
-                >
-                  <FiLogIn className="w-5 h-5" />
-                  <span>Login</span>
-                </Link>
-
-                <Link
-                  href="/register"
-                  className="bg-white text-indigo-600 hover:bg-indigo-50 px-6 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
-                >
-                  Register
-                </Link>
-              </>
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Brand / Logo */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            {gymBranding?.gymLogo ? (
+              <img
+                src={gymBranding.gymLogo}
+                alt={gymBranding.name || "Gym Logo"}
+                className="h-8 max-h-8 w-auto max-w-[120px] object-contain rounded-control border border-line"
+              />
             ) : (
-              <>
-                <span className="font-semibold text-indigo-600">
-                  {user?.name}
-                </span>
-
-                <button
-                  onClick={logout}
-                  className="text-red-600 hover:text-red-800 transition-colors duration-200 flex items-center space-x-1"
-                >
-                  <FiLogOut className="w-5 h-5" />
-                  <span>Logout</span>
-                </button>
-              </>
+              <div
+                className="w-8 h-8 rounded-control bg-primary flex items-center justify-center text-on-primary font-semibold text-xs border"
+                style={{
+                  border: "var(--fill-border)",
+                  backgroundColor: "rgb(var(--primary))",
+                }}
+              >
+                <Dumbbell className="w-4 h-4 text-on-primary" />
+              </div>
             )}
-          </nav>
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="hover:text-indigo-400 transition-colors duration-200"
-            >
-              {isOpen ? (
-                <FiX className="w-6 h-6" />
-              ) : (
-                <FiMenu className="w-6 h-6" />
-              )}
-            </button>
-          </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-base md:text-lg tracking-tight text-ink group-hover:text-primary-ink transition-colors flex items-center gap-1.5">
+                {gymBranding?.name || "FitConnect"}
+                {gymBranding?.themeColor && (
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{ backgroundColor: gymBranding.themeColor }}
+                    title={`Brand Color: ${gymBranding.themeColor}`}
+                  />
+                )}
+              </span>
+            </div>
+          </Link>
         </div>
 
-        <Transition
-          show={isOpen}
-          enter="transition ease-out duration-100"
-          enterFrom="transform opacity-0 scale-95"
-          enterTo="transform opacity-100 scale-100"
-          leave="transition ease-in duration-75"
-          leaveFrom="transform opacity-100 scale-100"
-          leaveTo="transform opacity-0 scale-95"
-        >
-          <div className="md:hidden absolute left-0 right-0 top-full bg-white shadow-lg rounded-b-lg">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                href="/"
-                className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
-              >
-                Home
-              </Link>
-
-              {isLoggedIn && (
-              <Link
-              href="/request"
-              className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
-            >
-              Requests
-            </Link>
-            )}
-
-              {isLoggedIn && (
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-6">
+          {!isLoggedIn ? (
+            <>
+              {isLandingPage ? (
                 <>
-                  <Link
-                    href="/dashboard"
-                    className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
+                  <a
+                    href="#how-it-works"
+                    className="text-[13px] font-medium text-ink-soft hover:text-ink transition-colors"
                   >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/gyms"
-                    className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
+                    How it works
+                  </a>
+                  <a
+                    href="#what-you-manage"
+                    className="text-[13px] font-medium text-ink-soft hover:text-ink transition-colors"
                   >
-                    Gyms
-                  </Link>
-                </>
-              )}
-
-              {!isLoggedIn ? (
-                <>
-                  <Link
-                    href="/login"
-                    className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors duration-200"
+                    What you manage
+                  </a>
+                  <a
+                    href="#your-gym-your-look"
+                    className="text-[13px] font-medium text-ink-soft hover:text-ink transition-colors"
                   >
-                    Login
-                  </Link>
-
+                    Your gym your look
+                  </a>
                   <Link
-                    href="/register"
-                    className="block px-3 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 transition-colors duration-200"
+                    href="/login?email=demo%40gym.com&role=gymOwner"
+                    className="text-[13px] font-medium text-ink-soft hover:text-ink transition-colors"
                   >
-                    Register
+                    Demo
                   </Link>
                 </>
               ) : (
-                <button
-                  onClick={logout}
-                  className="block w-full text-left px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-800 transition-colors duration-200"
+                <Link
+                  href="/"
+                  className="text-[13px] font-medium text-ink-soft hover:text-ink transition-colors"
                 >
-                  Logout
-                </button>
+                  Home
+                </Link>
               )}
+            </>
+          ) : (
+            <>
+              <Link
+                href="/dashboard"
+                className={`text-[13px] font-medium transition-colors pb-1 border-b-2 ${
+                  pathname === "/dashboard"
+                    ? "text-primary-ink font-semibold border-primary"
+                    : "border-transparent text-ink-soft hover:text-ink"
+                }`}
+              >
+                {user?.role === "gymOwner" ? "Dashboard" : "Today's Schedule"}
+              </Link>
+
+              {user?.role === "gymOwner" && (
+                <Link
+                  href="/request"
+                  className={`text-[13px] font-medium transition-colors pb-1 border-b-2 ${
+                    pathname === "/request"
+                      ? "text-primary-ink font-semibold border-primary"
+                      : "border-transparent text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  Join Requests
+                </Link>
+              )}
+
+              <Link
+                href="/gyms"
+                className={`text-[13px] font-medium transition-colors pb-1 border-b-2 ${
+                  pathname.startsWith("/gyms")
+                    ? "text-primary-ink font-semibold border-primary"
+                    : "border-transparent text-ink-soft hover:text-ink"
+                }`}
+              >
+                Gyms Directory
+              </Link>
+            </>
+          )}
+        </nav>
+
+        {/* Right Actions */}
+        <div className="hidden lg:flex items-center gap-3">
+          {!isLoggedIn ? (
+            <>
+              <Link
+                href="/login"
+                className="text-[13px] font-medium text-ink-soft hover:text-ink px-3 py-1.5 transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/login?email=demo%40gym.com&role=gymOwner"
+                className="h-9 px-4 bg-primary hover:bg-primary-hover text-on-primary text-[13px] font-semibold rounded-control inline-flex items-center transition-colors"
+                style={{ border: "var(--fill-border)" }}
+              >
+                Try Demo
+              </Link>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-2.5 py-1 bg-surface-alt rounded-control border border-line">
+                <div className="w-6 h-6 rounded-avatar bg-primary text-on-primary flex items-center justify-center text-[11px] font-semibold">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-[12px] font-medium text-ink leading-tight">
+                    {user?.name}
+                  </span>
+                  <span className="text-[10px] text-ink-soft uppercase leading-none">
+                    {user?.role === "gymOwner" ? "Owner" : "Member"}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => logout(true)}
+                className="h-8 px-2.5 text-[12px] font-medium text-ink-soft hover:text-status-danger hover:bg-status-danger-soft/40 rounded-control border border-line flex items-center gap-1.5 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign out</span>
+              </button>
             </div>
-          </div>
-        </Transition>
+          )}
+        </div>
+
+        {/* Mobile Menu Toggle */}
+        <div className="lg:hidden flex items-center gap-2">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-control border border-line text-ink-soft hover:text-ink hover:bg-surface-alt"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-surface border-b border-line px-4 py-4 flex flex-col gap-3">
+          {!isLoggedIn ? (
+            <>
+              {isLandingPage ? (
+                <>
+                  <a
+                    href="#how-it-works"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm font-medium text-ink-soft py-1.5"
+                  >
+                    How it works
+                  </a>
+                  <a
+                    href="#what-you-manage"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm font-medium text-ink-soft py-1.5"
+                  >
+                    What you manage
+                  </a>
+                  <a
+                    href="#your-gym-your-look"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm font-medium text-ink-soft py-1.5"
+                  >
+                    Your gym your look
+                  </a>
+                  <Link
+                    href="/login?email=demo%40gym.com&role=gymOwner"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm font-medium text-ink-soft py-1.5"
+                  >
+                    Demo
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-sm font-medium text-ink-soft py-1.5"
+                >
+                  Home
+                </Link>
+              )}
+              <div className="pt-2 border-t border-line flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="h-10 text-center flex items-center justify-center text-sm font-medium text-ink border border-line rounded-control"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/login?email=demo%40gym.com&role=gymOwner"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="h-10 text-center flex items-center justify-center bg-primary text-on-primary text-sm font-semibold rounded-control"
+                  style={{ border: "var(--fill-border)" }}
+                >
+                  Try Demo
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2.5 pb-2 border-b border-line">
+                <div className="w-8 h-8 rounded-avatar bg-primary text-on-primary flex items-center justify-center text-xs font-semibold">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-ink">{user?.name}</div>
+                  <div className="text-xs text-ink-soft capitalize">{user?.role}</div>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-ink-soft py-1.5"
+              >
+                Dashboard
+              </Link>
+
+              {user?.role === "gymOwner" && (
+                <Link
+                  href="/request"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-sm font-medium text-ink-soft py-1.5"
+                >
+                  Join Requests
+                </Link>
+              )}
+
+              <Link
+                href="/gyms"
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-sm font-medium text-ink-soft py-1.5"
+              >
+                Gyms Directory
+              </Link>
+
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout(true);
+                }}
+                className="text-sm font-medium text-status-danger text-left py-1.5 pt-2 border-t border-line flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign out</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </header>
   );
 }

@@ -1,83 +1,71 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-    darkMode: ["class"],
-    content: [
+  darkMode: ["class"],
+  content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-  	extend: {
-  		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
-  			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
-  			},
-  			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
-  			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
-  			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
-  		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
-  	}
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "rgb(var(--primary) / <alpha-value>)",
+          hover: "rgb(var(--primary-hover) / <alpha-value>)",
+          soft: "rgb(var(--primary-soft) / <alpha-value>)",
+          ink: "rgb(var(--primary-ink) / <alpha-value>)",
+          container: "rgb(var(--primary) / <alpha-value>)",
+        },
+        "on-primary": "rgb(var(--on-primary) / <alpha-value>)",
+        background: "rgb(var(--background) / <alpha-value>)",
+        surface: {
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          alt: "rgb(var(--surface-alt) / <alpha-value>)",
+          container: "rgb(var(--surface-alt) / <alpha-value>)",
+          "container-low": "rgb(var(--surface-alt) / <alpha-value>)",
+          "container-lowest": "rgb(var(--surface) / <alpha-value>)",
+          bright: "rgb(var(--surface) / <alpha-value>)",
+        },
+        ink: {
+          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
+          soft: "rgb(var(--ink-soft) / <alpha-value>)",
+          faint: "rgb(var(--ink-faint) / <alpha-value>)",
+        },
+        "on-surface": "rgb(var(--ink) / <alpha-value>)",
+        "on-surface-variant": "rgb(var(--ink-soft) / <alpha-value>)",
+        outline: "rgb(var(--ink-faint) / <alpha-value>)",
+        "outline-variant": "rgb(var(--line) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
+        status: {
+          success: "rgb(var(--status-success) / <alpha-value>)",
+          "success-soft": "rgb(var(--status-success-soft) / <alpha-value>)",
+          "success-text": "rgb(var(--status-success-text) / <alpha-value>)",
+          warning: "rgb(var(--status-warning) / <alpha-value>)",
+          "warning-soft": "rgb(var(--status-warning-soft) / <alpha-value>)",
+          "warning-text": "rgb(var(--status-warning-text) / <alpha-value>)",
+          danger: "rgb(var(--status-danger) / <alpha-value>)",
+          "danger-soft": "rgb(var(--status-danger-soft) / <alpha-value>)",
+          "danger-text": "rgb(var(--status-danger-text) / <alpha-value>)",
+          info: "rgb(var(--status-info) / <alpha-value>)",
+          "info-soft": "rgb(var(--status-info-soft) / <alpha-value>)",
+          "info-text": "rgb(var(--status-info-text) / <alpha-value>)",
+        },
+        error: "rgb(var(--status-danger-text) / <alpha-value>)",
+      },
+      borderRadius: {
+        panel: "6px",
+        control: "4px",
+        avatar: "4px",
+        DEFAULT: "4px",
+        sm: "2px",
+        md: "4px",
+        lg: "6px",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Plus Jakarta Sans", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+      },
+    },
   },
   plugins: [require("tailwindcss-animate")],
 };

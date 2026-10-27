@@ -91,6 +91,20 @@ exports.login = async (req, res) => {
     // Fetch the latest gymId in case it was updated
     const updatedUser = await User.findById(user._id).select("gymId");
 
+    // Fetch gym branding if gymId is available
+    let gymBranding = null;
+    if (updatedUser && updatedUser.gymId) {
+      const gymDoc = await Gym.findById(updatedUser.gymId).select("name gymLogo themeColor");
+      if (gymDoc) {
+        gymBranding = {
+          id: gymDoc._id,
+          name: gymDoc.name,
+          gymLogo: gymDoc.gymLogo || null,
+          themeColor: gymDoc.themeColor || null,
+        };
+      }
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       {
@@ -115,6 +129,7 @@ exports.login = async (req, res) => {
         role: user.role,
         gymId: updatedUser.gymId || null, // Include gymId in the response
       },
+      gym: gymBranding,
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -130,12 +145,26 @@ exports.verifyToken = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    let gymBranding = null;
+    if (user.gymId) {
+      const gymDoc = await Gym.findById(user.gymId).select("name gymLogo themeColor");
+      if (gymDoc) {
+        gymBranding = {
+          id: gymDoc._id,
+          name: gymDoc.name,
+          gymLogo: gymDoc.gymLogo || null,
+          themeColor: gymDoc.themeColor || null,
+        };
+      }
+    }
+
     res.json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       gymId: user.gymId, // Include gymId in the response
+      gym: gymBranding,
     });
   } catch (error) {
     console.error("Verification error:", error);

@@ -1,219 +1,328 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Check, X } from "lucide-react";
-import { Transition } from "@headlessui/react";
-import { useRouter } from "next/navigation"; // ✅ import router
 
-export default function Request() {
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, AlertCircle, CheckCircle, Clock, X, Check } from "lucide-react";
+
+export default function JoinRequestsPage() {
   const { token, user } = useAuth();
-  const router = useRouter(); // ✅ initialize router
+  const router = useRouter();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [processing, setProcessing] = useState(false);
+  const [processingId, setProcessingId] = useState(null);
+  const [rejectModalData, setRejectModalData] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (message, isSuccess = true) => {
+    setToastMessage({ message, isSuccess });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4500);
+  };
 
   const fetchRequests = async () => {
-    if (!token || !user?.role) {
-      setError("Unauthorized access. Please log in.");
-      setLoading(false);
-      return;
-    }
-
+    if (!token) return;
     try {
-      console.log("Fetching requests with token:", token);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/join/requests`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/requests`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch requests");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to fetch join requests");
       }
 
       const data = await response.json();
-      console.log("Fetched requests:", data);
       setRequests(data);
       setError(null);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (token && user?.role) {
+    if (token) {
       fetchRequests();
     }
-  }, [token, user]);
+  }, [token]);
 
-  const handleProcessRequest = async (requestId, status) => {
-    if (processing) return;
+  // Quick Approve Handler (design.md Pattern 1)
+  const handleQuickApprove = async (joinRequestId, memberName) => {
+    if (processingId) return;
+    setProcessingId(joinRequestId);
 
-    setProcessing(true);
     try {
-      console.log(`Processing request ${requestId} with status: ${status}`);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/join/process`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ requestId, status }),
-        }
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/quick-approve`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ joinRequestId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to quick approve request");
+      }
+
+      showToast(`${memberName || "Member"} approved with a starter plan.`);
+      // Update local state
+      setRequests((prev) =>
+        prev.map((r) => (r._id === joinRequestId ? { ...r, status: "approved" } : r))
       );
+    } catch (err) {
+      showToast(err.message, false);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Reject Request Handler
+  const handleConfirmReject = async () => {
+    if (!rejectModalData) return;
+    const { requestId, memberName } = rejectModalData;
+    setProcessingId(requestId);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join/process`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ requestId, status: "rejected" }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${status} request`);
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to reject request");
       }
 
-      // ✅ If approved and gymOwner, redirect to member details page
-      if (status === "approved" && user?.role === "gymOwner") {
-        router.push(`/dashboard/${requestId}`);
-        return; // stop here, don’t call fetchRequests
-      }
-
-      // For other statuses or roles, refresh list
-      await fetchRequests();
-    } catch (error) {
-      console.error("Error processing request:", error);
-      setError(error.message);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const renderRequestStatus = (request) => {
-    console.log("Rendering request status for:", request);
-
-    if (user?.role === "gymOwner") {
-      if (request.status === "approved" || request.status === "rejected") {
-        return (
-          <p
-            className={`px-4 py-2 text-white rounded-lg shadow-md ${
-              request.status === "approved" ? "bg-green-600" : "bg-red-600"
-            }`}
-          >
-            {request.status === "approved" ? "Accepted" : "Rejected"}
-          </p>
-        );
-      }
-
-      // Show action buttons for pending requests
-      return (
-        <div className="flex space-x-2">
-          <button
-            disabled={processing}
-            onClick={() => handleProcessRequest(request._id, "approved")}
-            className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition disabled:opacity-50"
-          >
-            <Check className="w-5 h-5" />
-            <span>Accept</span>
-          </button>
-          <button
-            disabled={processing}
-            onClick={() => handleProcessRequest(request._id, "rejected")}
-            className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50"
-          >
-            <X className="w-5 h-5" />
-            <span>Decline</span>
-          </button>
-        </div>
+      showToast(`Request from ${memberName} rejected.`);
+      setRequests((prev) =>
+        prev.map((r) => (r._id === requestId ? { ...r, status: "rejected" } : r))
       );
+    } catch (err) {
+      showToast(err.message, false);
+    } finally {
+      setProcessingId(null);
+      setRejectModalData(null);
     }
-
-    // Member view
-    return (
-      <p
-        className={`mt-2 text-sm font-medium ${
-          request.status === "approved"
-            ? "text-green-600"
-            : request.status === "rejected"
-            ? "text-red-600"
-            : "text-yellow-600"
-        }`}
-      >
-        {request.status === "approved"
-          ? "Your request has been accepted! You can access the gym shortly."
-          : request.status === "rejected"
-          ? "Your request was rejected. Contact the gym owner."
-          : "Your request is pending approval."}
-      </p>
-    );
   };
+
+  const pendingCount = requests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {user?.role === "gymOwner" ? "Join Requests" : "My Join Requests"}
-        </h1>
-        <p className="text-gray-600">
-          {user?.role === "gymOwner"
-            ? "Manage gym membership requests efficiently"
-            : "Track your gym membership requests"}
-        </p>
-      </div>
-
-      {loading && (
-        <div className="text-indigo-600 font-medium animate-pulse">
-          Loading...
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 text-red-600 px-4 py-2 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl p-6">
-          {requests.length === 0 ? (
-            <div className="text-center text-gray-500">No requests found.</div>
+    <div className="w-full min-h-[calc(100vh-64px)] bg-background py-8 px-4 md:px-6 lg:px-8">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          role="status"
+          className={`fixed bottom-4 right-4 z-50 px-4 py-3 rounded-panel border shadow-md flex items-center gap-2.5 text-[13px] bg-surface transition-all ${
+            toastMessage.isSuccess
+              ? "border-status-success text-status-success-text"
+              : "border-status-danger text-status-danger-text"
+          }`}
+        >
+          {toastMessage.isSuccess ? (
+            <CheckCircle className="w-4 h-4 text-status-success" />
           ) : (
-            <div className="space-y-4">
-              {requests?.map((request) => (
-                <Transition
-                  key={request._id}
-                  show={true}
-                  enter="transition-opacity duration-300"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                >
-                  <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
-                    <div>
-                      <p className="text-lg font-semibold text-gray-900">
-                        {request.member?.name}
-                      </p>
-                      <p className="text-gray-600">
-                        {request.member?.email}
-                      </p>
-                      {request.status === "pending" && (
-                        <p className="text-yellow-600 text-sm mt-1">Pending</p>
+            <AlertCircle className="w-4 h-4 text-status-danger" />
+          )}
+          <span>{toastMessage.message}</span>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {rejectModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-[460px] bg-surface border border-line rounded-panel p-6 flex flex-col gap-4 shadow-lg">
+            <h2 className="text-lg font-semibold text-ink">Reject Join Request</h2>
+            <p className="text-[14px] text-ink-soft leading-relaxed">
+              Reject request from <strong className="text-ink">{rejectModalData.memberName}</strong>?
+              This will update their application status to rejected.
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setRejectModalData(null)}
+                className="h-9 px-4 bg-surface hover:bg-surface-alt border border-line text-ink text-[13px] font-medium rounded-control"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                className="h-9 px-4 bg-status-danger text-white hover:bg-status-danger-text text-[13px] font-semibold rounded-control"
+              >
+                Reject Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-line">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Operations
+            </span>
+            <h1 className="text-2xl font-semibold tracking-tight text-ink mt-0.5">
+              Join Requests Queue
+            </h1>
+            <p className="text-[13px] text-ink-soft mt-1">
+              Review and provision membership plans for pending applicants.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[12px] px-2.5 py-1 rounded-[2px] bg-status-warning-soft text-status-warning-text border border-status-warning/40 font-medium">
+              {pendingCount} Pending Review
+            </span>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-4 bg-status-danger-soft border border-status-danger/40 rounded-control flex items-center gap-3 text-[13px] text-status-danger-text">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Requests Table Panel */}
+        <div className="w-full bg-surface border border-line rounded-panel overflow-hidden">
+          <div className="px-5 py-3 bg-surface-alt border-b border-line flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Applicant Queue
+            </span>
+            <span className="font-mono text-[11px] text-ink-faint">
+              Total Requests: {requests.length}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="p-12 flex flex-col items-center justify-center gap-3 text-ink-soft">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-sm">Loading applications...</span>
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
+              <Clock className="w-8 h-8 text-ink-faint mb-1" />
+              <h3 className="font-semibold text-base text-ink">No requests in queue</h3>
+              <p className="text-[13px] text-ink-soft max-w-sm">
+                Prospective members will appear here when they submit a join request through your gym profile.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-line">
+              {requests.map((req) => {
+                const isPending = req.status === "pending";
+                const isApproved = req.status === "approved";
+                const isRejected = req.status === "rejected";
+                const isBusy = processingId === req._id;
+
+                const memberName = req.member?.name || "Applicant";
+                const memberEmail = req.member?.email || "";
+
+                return (
+                  <div
+                    key={req._id}
+                    className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-surface-alt/40 transition-colors"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-semibold text-sm text-ink">{memberName}</span>
+                        {isPending && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-status-warning-soft text-status-warning-text border border-status-warning/40 font-semibold uppercase">
+                            Pending
+                          </span>
+                        )}
+                        {isApproved && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-status-success-soft text-status-success-text border border-status-success/40 font-semibold uppercase">
+                            Approved
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-status-danger-soft text-status-danger-text border border-status-danger/40 font-semibold uppercase">
+                            Rejected
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-[12px] text-ink-soft">
+                        {memberEmail} • Gym: {req.gym?.name || "Iron Paradise"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end md:self-auto">
+                      {isPending ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleQuickApprove(req._id, memberName)}
+                            className="h-8 px-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-on-primary text-[12px] font-semibold rounded-control flex items-center gap-1.5 transition-colors"
+                            style={{ border: "var(--fill-border)" }}
+                          >
+                            {isBusy ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Check className="w-3.5 h-3.5" />
+                            )}
+                            <span>Quick approve</span>
+                          </button>
+
+                          <Link
+                            href={`/dashboard/${req._id}`}
+                            className="h-8 px-3 bg-surface hover:bg-surface-alt border border-line text-ink text-[12px] font-medium rounded-control flex items-center transition-colors"
+                          >
+                            Set up plan
+                          </Link>
+
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() =>
+                              setRejectModalData({
+                                requestId: req._id,
+                                memberName,
+                              })
+                            }
+                            className="h-8 px-2.5 text-status-danger-text hover:bg-status-danger-soft/40 disabled:opacity-50 text-[12px] font-medium rounded-control transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {isApproved && (
+                            <Link
+                              href="/dashboard"
+                              className="text-[12px] font-semibold text-primary-ink hover:underline"
+                            >
+                              View in members table →
+                            </Link>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <div className="flex space-x-2">
-                      {renderRequestStatus(request)}
-                    </div>
                   </div>
-                </Transition>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

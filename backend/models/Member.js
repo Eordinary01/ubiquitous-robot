@@ -159,7 +159,7 @@ const memberSchema = new mongoose.Schema(
   {
     joinRequestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "JoinRequest",
+      ref: "Join",
       required: true,
       unique: true
     },

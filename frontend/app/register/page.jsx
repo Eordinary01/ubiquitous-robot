@@ -1,572 +1,460 @@
-'use client'
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Building2, Mail, Lock, User, Phone, MapPin, FileText, Clock, DollarSign } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+"use client";
 
-function Register() {
-  const { register, error } = useAuth();
+import React, { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle, Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
+
+const AMENITIES_OPTIONS = [
+  "Cardio Equipment",
+  "Weight Training",
+  "Group Classes",
+  "Swimming Pool",
+  "Sauna",
+  "Locker Rooms",
+  "Personal Training",
+];
+
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+export default function RegisterPage() {
+  const { register, error, clearError, loading } = useAuth();
+  const [role, setRole] = useState("member");
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState("");
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'member',
+    name: "",
+    email: "",
+    password: "",
     gymDetails: {
-      name: '',
+      name: "",
       address: {
-        street: '',
-        city: '',
-        state: '',
-        zipCode: ''
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
       },
       contact: {
-        phone: '',
-        email: ''
+        phone: "",
+        email: "",
       },
-      amenities: [],
+      amenities: ["Weight Training", "Cardio Equipment"],
       operatingHours: {
-        openTime: '',
-        closeTime: '',
-        daysOpen: []
+        openTime: "06:00 AM",
+        closeTime: "10:00 PM",
+        daysOpen: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
       },
-      membershipPlans: [],
-      isActive: true
-    }
+      memberShipPlans: [
+        { name: "Monthly Standard", price: 50, duration: "Monthly" },
+        { name: "Quarterly Pro", price: 135, duration: "Quarterly" },
+      ],
+      gymLogo: "",
+      themeColor: "#1E3F20",
+    },
   });
 
-  const AMENITIES_OPTIONS = [
-    "Cardio Equipment",
-    "Weight Training",
-    "Group Classes",
-    "Swimming Pool",
-    "Sauna",
-    "Locker Rooms",
-    "Personal Training"
-  ];
-
-  const DAYS_OF_WEEK = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday"
-  ];
-
-  const MEMBERSHIP_DURATIONS = ["Monthly", "Quarterly", "Annual"];
-
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (type === 'checkbox') {
-      const [parent, field] = name.split('.');
-      if (parent === 'amenities') {
-        setFormData(prev => ({
-          ...prev,
-          gymDetails: {
-            ...prev.gymDetails,
-            amenities: checked 
-              ? [...prev.gymDetails.amenities, value]
-              : prev.gymDetails.amenities.filter(item => item !== value)
-          }
-        }));
-        return;
-      }
-      if (parent === 'daysOpen') {
-        setFormData(prev => ({
-          ...prev,
-          gymDetails: {
-            ...prev.gymDetails,
-            operatingHours: {
-              ...prev.gymDetails.operatingHours,
-              daysOpen: checked
-                ? [...prev.gymDetails.operatingHours.daysOpen, value]
-                : prev.gymDetails.operatingHours.daysOpen.filter(day => day !== value)
-            }
-          }
-        }));
-        return;
-      }
-    }
-    
-    // Handle nested object updates
-    const keys = name.split('.');
-    if (keys.length > 1) {
-      setFormData(prev => {
-        let newData = { ...prev };
-        let current = newData;
-        
-        for (let i = 0; i < keys.length - 1; i++) {
-          current = current[keys[i]] = { ...current[keys[i]] };
-        }
-        
-        current[keys[keys.length - 1]] = value;
-        return newData;
-      });
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    if (error) clearError();
+    if (localError) setLocalError("");
   };
 
-  const addMembershipPlan = () => {
-    setFormData(prev => ({
+  const handleGymChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
       gymDetails: {
         ...prev.gymDetails,
-        membershipPlans: [
-          ...prev.gymDetails.membershipPlans,
-          { name: '', price: '', duration: 'Monthly' }
-        ]
-      }
+        [field]: value,
+      },
     }));
   };
 
-  const updateMembershipPlan = (index, field, value) => {
-    setFormData(prev => ({
+  const handleAddressChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
       gymDetails: {
         ...prev.gymDetails,
-        membershipPlans: prev.gymDetails.membershipPlans.map((plan, i) =>
-          i === index ? { ...plan, [field]: value } : plan
-        )
-      }
+        address: {
+          ...prev.gymDetails.address,
+          [field]: value,
+        },
+      },
     }));
   };
 
-  const removeMembershipPlan = (index) => {
-    setFormData(prev => ({
+  const handleContactChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
       gymDetails: {
         ...prev.gymDetails,
-        membershipPlans: prev.gymDetails.membershipPlans.filter((_, i) => i !== index)
-      }
+        contact: {
+          ...prev.gymDetails.contact,
+          [field]: value,
+        },
+      },
     }));
+  };
+
+  const toggleAmenity = (amenity) => {
+    const current = formData.gymDetails.amenities;
+    const updated = current.includes(amenity)
+      ? current.filter((a) => a !== amenity)
+      : [...current, amenity];
+    handleGymChange("amenities", updated);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (formData.role === 'gymOwner' && step === 1) {
-        setStep(2);
+    if (!formData.name || !formData.email || !formData.password) {
+      setLocalError("Name, email, and password are required.");
+      return;
+    }
+
+    if (role === "gymOwner") {
+      if (!formData.gymDetails.name || !formData.gymDetails.contact.phone) {
+        setLocalError("Gym name and contact phone are required.");
         return;
       }
-      
-      await register(formData);
-    } catch (error) {
-      console.error('Registration error:', error);
     }
+
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role,
+      ...(role === "gymOwner" && {
+        gymDetails: {
+          ...formData.gymDetails,
+          contact: {
+            ...formData.gymDetails.contact,
+            email: formData.gymDetails.contact.email || formData.email,
+          },
+        },
+      }),
+    };
+
+    await register(payload);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 p-6">
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-xl shadow-xl border border-indigo-100 p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-indigo-900 mb-2">
-              {step === 1 ? 'Create Account' : 'Gym Details'}
-            </h1>
-            <p className="text-indigo-500">
-              {step === 1 ? 'Join our fitness community today' : 'Tell us about your gym'}
-            </p>
-          </div>
+  const displayError = localError || error;
 
-          {error && (
-            <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-              {error}
+  return (
+    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-[560px] bg-surface border border-line rounded-panel overflow-hidden">
+        {/* Header */}
+        <div className="p-6 border-b border-line bg-surface-alt">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint block">
+            FitConnect Onboarding
+          </span>
+          <h1 className="text-xl font-semibold text-ink tracking-tight mt-1">
+            Create your account
+          </h1>
+          <p className="text-[13px] text-ink-soft mt-1">
+            Choose your account role to get started with FitConnect.
+          </p>
+
+          {/* Role Segmented Switcher */}
+          <div className="mt-4 grid grid-cols-2 p-1 bg-surface border border-line rounded-control gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setRole("member");
+                setStep(1);
+              }}
+              className={`py-1.5 text-[12px] font-semibold rounded-[2px] transition-colors ${
+                role === "member"
+                  ? "bg-primary text-on-primary"
+                  : "text-ink-soft hover:text-ink"
+              }`}
+            >
+              Fitness Enthusiast (Member)
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("gymOwner")}
+              className={`py-1.5 text-[12px] font-semibold rounded-[2px] transition-colors ${
+                role === "gymOwner"
+                  ? "bg-primary text-on-primary"
+                  : "text-ink-soft hover:text-ink"
+              }`}
+            >
+              Gym Owner / Manager
+            </button>
+          </div>
+        </div>
+
+        {/* Stepper for Gym Owner */}
+        {role === "gymOwner" && (
+          <div className="px-6 py-2.5 bg-surface-alt/40 border-b border-line flex items-center justify-between text-[11px] font-mono">
+            <span className={step === 1 ? "text-primary-ink font-semibold" : "text-ink-faint"}>
+              1. Credentials
+            </span>
+            <span className="text-line">→</span>
+            <span className={step === 2 ? "text-primary-ink font-semibold" : "text-ink-faint"}>
+              2. Facility Details
+            </span>
+            <span className="text-line">→</span>
+            <span className={step === 3 ? "text-primary-ink font-semibold" : "text-ink-faint"}>
+              3. Branding
+            </span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          {displayError && (
+            <div className="p-3 bg-status-danger-soft border border-status-danger/40 rounded-control flex items-start gap-2.5 text-[13px] text-status-danger-text">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{displayError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-          {step === 1 ? (
-              <div className="space-y-4">
-                <div className="relative">
-                  <label htmlFor="name" className="text-sm font-medium text-indigo-900 mb-1 block">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-indigo-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-                </div>
+          {/* STEP 1: Basic Credentials (for Member or Gym Owner) */}
+          {(role === "member" || step === 1) && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Full name <span className="text-ink-faint text-[12px] font-normal">(required)</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Parth Sharma"
+                  className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
+                />
+              </div>
 
-                <div className="relative">
-                  <label htmlFor="email" className="text-sm font-medium text-indigo-900 mb-1 block">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-indigo-400" />
-                    </div>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Email address <span className="text-ink-faint text-[12px] font-normal">(required)</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="e.g. parth@gym.com"
+                  className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
+                />
+              </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Password <span className="text-ink-faint text-[12px] font-normal">(required, min 6 characters)</span>
+                </label>
                 <div className="relative">
-                  <label htmlFor="password" className="text-sm font-medium text-indigo-900 mb-1 block">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-indigo-400" />
-                    </div>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="role" className="text-sm font-medium text-indigo-900 mb-1 block">
-                    Account Type
-                  </label>
-                  <select
-                    name="role"
-                    value={formData.role}
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    required
+                    minLength={6}
+                    value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="••••••••"
+                    className="w-full h-9 pl-3 pr-10 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-2 text-ink-soft hover:text-ink transition-colors"
+                    title={showPassword ? "Hide password" : "Show password"}
                   >
-                    <option value="member">Gym Member</option>
-                    <option value="gymOwner">Gym Owner</option>
-                  </select>
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Basic Info Section */}
-                <div className="relative">
-                  <label htmlFor="gymName" className="text-sm font-medium text-indigo-900 mb-1 block">
-                    Gym Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Building2 className="h-5 w-5 text-indigo-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="gymDetails.name"
-                      value={formData.gymDetails.name}
-                      onChange={handleInputChange}
-                      className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="FitZone Gym"
-                      required
-                    />
-                  </div>
-                </div>
+            </div>
+          )}
 
-                {/* Address Section */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <label htmlFor="street" className="text-sm font-medium text-indigo-900 mb-1 block">
-                      Street Address
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="h-5 w-5 text-indigo-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="gymDetails.address.street"
-                        value={formData.gymDetails.address.street}
-                        onChange={handleInputChange}
-                        className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                  </div>
+          {/* STEP 2: Gym Details (for Gym Owner) */}
+          {role === "gymOwner" && step === 2 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Gym / Studio name <span className="text-ink-faint text-[12px] font-normal">(required)</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.gymDetails.name}
+                  onChange={(e) => handleGymChange("name", e.target.value)}
+                  placeholder="e.g. Iron Paradise Gym"
+                  className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
+                />
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      name="gymDetails.address.city"
-                      value={formData.gymDetails.address.city}
-                      onChange={handleInputChange}
-                      className="rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="City"
-                      required
-                    />
-                    <input
-                      type="text"
-                      name="gymDetails.address.state"
-                      value={formData.gymDetails.address.state}
-                      onChange={handleInputChange}
-                      className="rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="State"
-                      required
-                    />
-                  </div>
-
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-ink">City</label>
                   <input
                     type="text"
-                    name="gymDetails.address.zipCode"
-                    value={formData.gymDetails.address.zipCode}
-                    onChange={handleInputChange}
-                    className="rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Zip Code"
-                    required
+                    value={formData.gymDetails.address.city}
+                    onChange={(e) => handleAddressChange("city", e.target.value)}
+                    placeholder="e.g. Mumbai"
+                    className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
                   />
                 </div>
-
-                {/* Contact Section */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <label htmlFor="phone" className="text-sm font-medium text-indigo-900 mb-1 block">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-5 w-5 text-indigo-400" />
-                      </div>
-                      <input
-                        type="tel"
-                        name="gymDetails.contact.phone"
-                        value={formData.gymDetails.contact.phone}
-                        onChange={handleInputChange}
-                        className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="+1 (555) 000-0000"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <label htmlFor="gymEmail" className="text-sm font-medium text-indigo-900 mb-1 block">
-                      Gym Email
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-indigo-400" />
-                      </div>
-                      <input
-                        type="email"
-                        name="gymDetails.contact.email"
-                        value={formData.gymDetails.contact.email}
-                        onChange={handleInputChange}
-                        className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4 text-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="gym@example.com"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Operating Hours Section */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-indigo-900">Operating Hours</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                        Opening Time
-                      </label>
-                      <input
-                        type="time"
-                        name="gymDetails.operatingHours.openTime"
-                        value={formData.gymDetails.operatingHours.openTime}
-                        onChange={handleInputChange}
-                        className="w-full rounded-lg border border-indigo-200 bg-white py-3 px-4"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                        Closing Time
-                      </label>
-                      <input
-                        type="time"
-                        name="gymDetails.operatingHours.closeTime"
-                        value={formData.gymDetails.operatingHours.closeTime}
-                        onChange={handleInputChange}
-                        className="w-full rounded-lg border border-indigo-200 bg-white py-3 px-4"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                      Days Open
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {DAYS_OF_WEEK.map(day => (
-                        <label key={day} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            name="daysOpen.days"
-                            value={day}
-                            checked={formData.gymDetails.operatingHours.daysOpen.includes(day)}
-                            onChange={handleInputChange}
-                            className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-sm text-gray-700">{day}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Amenities Section */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-indigo-900">Amenities</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {AMENITIES_OPTIONS.map(amenity => (
-                      <label key={amenity} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          name="amenities.list"
-                          value={amenity}
-                          checked={formData.gymDetails.amenities.includes(amenity)}
-                          onChange={handleInputChange}
-                          className="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="text-sm text-gray-700">{amenity}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Membership Plans Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-indigo-900">Membership Plans</h3>
-                    <button
-                      type="button"
-                      onClick={addMembershipPlan}
-                      className="px-4 py-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      Add Plan
-                    </button>
-                  </div>
-
-                  {formData.gymDetails.membershipPlans.map((plan, index) => (
-                    <div key={index} className="p-4 border border-indigo-200 rounded-lg space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-medium text-indigo-900">Plan {index + 1}</h4>
-                        <button
-                          type="button"
-                          onClick={() => removeMembershipPlan(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                            Plan Name
-                          </label>
-                          <input
-                            type="text"
-                            value={plan.name}
-                            onChange={(e) => updateMembershipPlan(index, 'name', e.target.value)}
-                            className="w-full rounded-lg border border-indigo-200 bg-white py-3 px-4"
-                            placeholder="Basic Plan"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                            Price
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <DollarSign className="h-5 w-5 text-indigo-400" />
-                            </div>
-                            <input
-                              type="number"
-                              value={plan.price}
-                              onChange={(e) => updateMembershipPlan(index, 'price', e.target.value)}
-                              className="pl-10 w-full rounded-lg border border-indigo-200 bg-white py-3 px-4"
-                              placeholder="0.00"
-                              min="0"
-                              step="0.01"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-indigo-900 mb-1 block">
-                            Duration
-                          </label>
-                          <select
-                            value={plan.duration}
-                            onChange={(e) => updateMembershipPlan(index, 'duration', e.target.value)}
-                            className="w-full rounded-lg border border-indigo-200 bg-white py-3 px-4"
-                            required
-                          >
-                            {MEMBERSHIP_DURATIONS.map(duration => (
-                              <option key={duration} value={duration}>
-                                {duration}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-medium text-ink">Phone</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.gymDetails.contact.phone}
+                    onChange={(e) => handleContactChange("phone", e.target.value)}
+                    placeholder="e.g. 9876543210"
+                    className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none font-mono"
+                  />
                 </div>
               </div>
-            )}
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transform transition-all duration-150 hover:scale-[1.02]"
-            >
-              {step === 1 ? (formData.role === 'gymOwner' ? 'Next' : 'Create Account') : 'Create Account'}
-            </button>
+              {/* Amenities checkboxes */}
+              <div className="flex flex-col gap-1.5 pt-1">
+                <label className="text-[13px] font-medium text-ink">Available amenities</label>
+                <div className="grid grid-cols-2 gap-2 text-[12px]">
+                  {AMENITIES_OPTIONS.map((amenity) => {
+                    const isSelected = formData.gymDetails.amenities.includes(amenity);
+                    return (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => toggleAmenity(amenity)}
+                        className={`p-2 rounded-control border text-left flex items-center justify-between transition-colors ${
+                          isSelected
+                            ? "bg-primary-soft text-primary-ink border-primary-ink/40 font-medium"
+                            : "bg-surface border-line text-ink-soft hover:text-ink"
+                        }`}
+                      >
+                        <span>{amenity}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
-            {step === 2 && (
+          {/* STEP 3: Gym Branding (for Gym Owner) */}
+          {role === "gymOwner" && step === 3 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Gym Logo URL <span className="text-ink-faint text-[12px] font-normal">(optional, https only)</span>
+                </label>
+                <input
+                  type="url"
+                  value={formData.gymDetails.gymLogo}
+                  onChange={(e) => handleGymChange("gymLogo", e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                  className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink placeholder:text-ink-faint focus:border-primary-ink focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-ink">
+                  Theme Brand Color <span className="text-ink-faint text-[12px] font-normal">(hex, default #1E3F20)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={formData.gymDetails.themeColor || "#1E3F20"}
+                    onChange={(e) => handleGymChange("themeColor", e.target.value)}
+                    className="w-10 h-9 p-0.5 border border-line rounded-control cursor-pointer bg-surface"
+                  />
+                  <input
+                    type="text"
+                    value={formData.gymDetails.themeColor || "#1E3F20"}
+                    onChange={(e) => handleGymChange("themeColor", e.target.value)}
+                    placeholder="#1E3F20"
+                    className="h-9 px-3 bg-surface border border-line rounded-control text-sm text-ink font-mono uppercase focus:border-primary-ink focus:outline-none w-32"
+                  />
+                  <span
+                    className="h-9 px-3 text-white text-[12px] font-semibold rounded-control flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: formData.gymDetails.themeColor || "#1E3F20" }}
+                  >
+                    Sample Accent
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-2">
+            {role === "gymOwner" && step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep(1)}
-                className="w-full mt-4 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                onClick={() => setStep(step - 1)}
+                className="h-9 px-4 bg-surface hover:bg-surface-alt border border-line text-ink text-[13px] font-medium rounded-control"
               >
                 Back
               </button>
+            ) : (
+              <div></div>
             )}
-          </form>
 
-          <p className="mt-8 text-center text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              Sign in
-            </Link>
-          </p>
+            {role === "gymOwner" && step < 3 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (step === 1 && (!formData.name || !formData.email || !formData.password)) {
+                    setLocalError("Please fill credentials first.");
+                    return;
+                  }
+                  setLocalError("");
+                  setStep(step + 1);
+                }}
+                className="h-9 px-4 bg-primary hover:bg-primary-hover text-on-primary text-[13px] font-semibold rounded-control inline-flex items-center gap-1.5"
+                style={{ border: "var(--fill-border)" }}
+              >
+                <span>Continue</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className="h-10 px-6 bg-primary hover:bg-primary-hover disabled:opacity-50 text-on-primary text-[13px] font-semibold rounded-control inline-flex items-center gap-2"
+                style={{ border: "var(--fill-border)" }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Creating account...</span>
+                  </>
+                ) : (
+                  <span>Complete registration</span>
+                )}
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-surface-alt border-t border-line text-center text-[13px] text-ink-soft">
+          Already registered?{" "}
+          <Link href="/login" className="text-primary-ink font-semibold hover:underline">
+            Sign in
+          </Link>
         </div>
       </div>
     </div>
   );
 }
-
-export default Register;
-                  

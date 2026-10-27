@@ -9,6 +9,9 @@ router.post('/request',authMiddleware, joinController.joinRequest);
 // gym owner processes a join request
 router.post('/process',authMiddleware, joinController.processJoinRequest);
 
+// gym owner quick-approves a join request
+router.post('/quick-approve', authMiddleware, joinController.quickApprove);
+
 // gym owner fetches all join requests for their gym
 router.get('/requests',authMiddleware, joinController.getJoinRequests); 
 

@@ -18,6 +18,11 @@ exports.addMember = async (req, res) => {
       return res.status(404).json({ message: "Join request not found" });
     }
 
+    const targetGym = await Gym.findById(joinRequest.gym);
+    if (targetGym && targetGym.owner.toString() !== req.user.userId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized access: caller does not own this gym" });
+    }
+
     // Check if member already exists for this join request
     let member = await Member.findOne({ joinRequestId: joinRequestId });
 
@@ -30,6 +35,9 @@ exports.addMember = async (req, res) => {
         membershipDetails.measurements || member.measurements;
       member.exercisePlan =
         membershipDetails.exercisePlan || member.exercisePlan;
+      if (membershipDetails.dietPlan) {
+        member.dietPlan = membershipDetails.dietPlan;
+      }
 
       await member.save();
 
@@ -48,6 +56,7 @@ exports.addMember = async (req, res) => {
         healthInfo: membershipDetails.healthInfo,
         measurements: membershipDetails.measurements,
         exercisePlan: membershipDetails.exercisePlan,
+        dietPlan: membershipDetails.dietPlan || [],
         status: "active",
       });
 
@@ -559,12 +568,18 @@ exports.getMemberByJoinRequestId = async (req, res) => {
     console.log("Looking for member with joinRequestId:", joinRequestId);
 
     // Find member by joinRequestId
-    const member = await Member.findOne({ joinRequestId: joinRequestId });
+    const member = await Member.findOne({ joinRequestId: joinRequestId }).populate("gym");
 
     if (!member) {
       return res.status(404).json({
         message: "Member not found for this join request",
         joinRequestId: joinRequestId,
+      });
+    }
+
+    if (member.gym?.owner?.toString() !== req.user.userId && req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Unauthorized access to this member's data",
       });
     }
 
@@ -575,6 +590,7 @@ exports.getMemberByJoinRequestId = async (req, res) => {
         healthInfo: member.healthInfo,
         measurements: member.measurements,
         exercisePlan: member.exercisePlan,
+        dietPlan: member.dietPlan || [],
       },
     };
 

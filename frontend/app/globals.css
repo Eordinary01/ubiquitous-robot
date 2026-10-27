@@ -2,120 +2,115 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 @layer base {
   :root {
+    /* Brand Tokens (Default Deep Pine #1E3F20) */
+    --primary: 30 63 32;
+    --primary-hover: 21 44 22;
+    --primary-soft: 232 239 233;
+    --primary-ink: 22 48 24;
+    --on-primary: 255 255 255;
+    --fill-border: none;
 
-    --background: 0 0% 100%;
+    /* Neutral Tokens */
+    --background: 251 251 250;
+    --surface: 255 255 255;
+    --surface-alt: 244 244 241;
+    --ink: 26 27 25;
+    --ink-soft: 88 90 85;
+    --ink-faint: 107 110 102;
+    --line: 226 227 222;
 
-    --foreground: 240 10% 3.9%;
+    /* Fixed Status Tokens (Never overridden by gym themes) */
+    --status-success: 27 94 32;
+    --status-success-soft: 232 245 233;
+    --status-success-text: 27 94 32;
 
-    --card: 0 0% 100%;
+    --status-warning: 180 83 9;
+    --status-warning-soft: 254 243 199;
+    --status-warning-text: 146 64 14;
 
-    --card-foreground: 240 10% 3.9%;
+    --status-danger: 185 28 28;
+    --status-danger-soft: 254 226 226;
+    --status-danger-text: 153 27 27;
 
-    --popover: 0 0% 100%;
+    --status-info: 29 78 216;
+    --status-info-soft: 239 246 255;
+    --status-info-text: 30 64 175;
 
-    --popover-foreground: 240 10% 3.9%;
-
-    --primary: 240 5.9% 10%;
-
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 240 4.8% 95.9%;
-
-    --secondary-foreground: 240 5.9% 10%;
-
-    --muted: 240 4.8% 95.9%;
-
-    --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 240 4.8% 95.9%;
-
-    --accent-foreground: 240 5.9% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 5.9% 90%;
-
-    --input: 240 5.9% 90%;
-
-    --ring: 240 10% 3.9%;
-
-    --chart-1: 12 76% 61%;
-
-    --chart-2: 173 58% 39%;
-
-    --chart-3: 197 37% 24%;
-
-    --chart-4: 43 74% 66%;
-
-    --chart-5: 27 87% 67%;
-
-    --radius: 0.5rem
+    /* Geometry tokens */
+    --radius-panel: 6px;
+    --radius-control: 4px;
+    --radius-avatar: 4px;
   }
+
   .dark {
+    /* Brand Tokens Dark */
+    --primary: 111 184 115;
+    --primary-hover: 138 208 142;
+    --primary-soft: 20 41 24;
+    --primary-ink: 165 220 168;
+    --on-primary: 10 27 14;
 
-    --background: 240 10% 3.9%;
+    /* Neutral Tokens Dark */
+    --background: 18 19 18;
+    --surface: 24 26 24;
+    --surface-alt: 33 35 33;
+    --ink: 242 243 240;
+    --ink-soft: 162 165 158;
+    --ink-faint: 142 145 138;
+    --line: 45 48 44;
 
-    --foreground: 0 0% 98%;
+    /* Fixed Status Tokens Dark */
+    --status-success: 63 165 91;
+    --status-success-soft: 16 40 26;
+    --status-success-text: 134 215 154;
 
-    --card: 240 10% 3.9%;
+    --status-warning: 217 154 43;
+    --status-warning-soft: 46 34 8;
+    --status-warning-text: 242 194 107;
 
-    --card-foreground: 0 0% 98%;
+    --status-danger: 229 72 77;
+    --status-danger-soft: 48 20 20;
+    --status-danger-text: 245 158 158;
 
-    --popover: 240 10% 3.9%;
+    --status-info: 76 141 240;
+    --status-info-soft: 15 29 51;
+    --status-info-text: 147 184 245;
+  }
 
-    --popover-foreground: 0 0% 98%;
+  * {
+    border-color: rgb(var(--line));
+  }
 
-    --primary: 0 0% 98%;
+  *:focus-visible {
+    outline: 2px solid rgb(var(--primary-ink));
+    outline-offset: 2px;
+  }
 
-    --primary-foreground: 240 5.9% 10%;
+  html {
+    scroll-behavior: smooth;
+  }
 
-    --secondary: 240 3.7% 15.9%;
-
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 240 3.7% 15.9%;
-
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
-
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 3.7% 15.9%;
-
-    --input: 240 3.7% 15.9%;
-
-    --ring: 240 4.9% 83.9%;
-
-    --chart-1: 220 70% 50%;
-
-    --chart-2: 160 60% 45%;
-
-    --chart-3: 30 80% 55%;
-
-    --chart-4: 280 65% 60%;
-
-    --chart-5: 340 75% 55%
+  body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--ink));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
+/* Tabular figures for numerical metrics */
+.tabular-nums,
+table,
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
 
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+/* Hide scrollbar while preserving scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
