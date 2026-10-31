@@ -1,10 +1,20 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import jwt from "jsonwebtoken";
 import { applyGymTheme } from "@/lib/themeEngine";
 
 const AuthContext = createContext();
+
+const decodeJwt = (token) => {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(base64))));
+  } catch {
+    return null;
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   const checkTokenExpiration = (token) => {
     if (!token) return false;
     try {
-      const decodeToken = jwt.decode(token);
+      const decodeToken = decodeJwt(token);
       const currentTime = Date.now() / 1000;
       return decodeToken && decodeToken.exp > currentTime;
     } catch (error) {
@@ -118,7 +128,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || "Login Failed");
       }
 
-      const decodedToken = jwt.decode(data.token);
+      const decodedToken = decodeJwt(data.token);
       const userToStore = {
         id: decodedToken.userId,
         name: decodedToken.name,
